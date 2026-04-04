@@ -70,3 +70,21 @@ def index():
 
 # Comments
 
+
+
+
+if __name__ == '__main__':
+  if not os.path.exists(DATABASE):
+    init_db()
+  else:
+    # still apply any new schema changes
+    with app.app_context():
+      db = get_db()
+      with open('schema.sql') as f:
+        db.executescript(f.read())
+      db.commit()
+  app.run(debug=True, port=5000, threaded=True)
+
+
+
+
