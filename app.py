@@ -34,7 +34,7 @@ def login_required(f):
   @wraps(f)
   def decorated(*args, **kwargs):
     if 'username' not in session:
-      return redirect(url_for('login'))# depends on ui
+      return redirect(url_for('login'))
     return f(*args, **kwargs)
   return decorated
 
@@ -50,8 +50,8 @@ def current_user():
 @app.route('/')
 def index():
   if 'username' in session:
-    return redirect(url_for('feed')) #depend on ui
-  return redirect(url_for('login')) #depend on ui
+    return redirect(url_for('feed'))
+  return redirect(url_for('login'))
 
 # user authentication - login
 
