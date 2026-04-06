@@ -13,41 +13,45 @@ app.secret_key = SECRET_KEY
 
 # Database
 def get_db() -> sqlite3.Connection:
-  db = g._database = sqlite3.connect(DATABASE)
-  db.row_factory = sqlite3.Row
-  db.execute("PRAGMA foreign_keys = ON")
+  db = getattr(g, '_database', None)
+  if db is None:
+    db = g._database = sqlite3.connect(DATABASE)
+    db.row_factory = sqlite3.Row
+    db.execute("PRAGMA foreign_keys = ON")
   return db
 
 @app.teardown_appcontext
 def close_db(_):
-  db.close()
+  db = getattr(g, '_database', None)
+  if db is not None:
+    db.close()
 
 def init_db():
   with app.app_context():
     db = get_db()
     with open('schema.sql', 'r') as f:
       db.executescript(f.read())
-      db.commit()
+    db.commit()
 
 #  Auth helpers 
 def login_required(f): 
   @wraps(f)
   def decorated(*args, **kwargs):
-    if 'username' not in session:
+    if 'userId' not in session:
       return redirect(url_for('login'))
     return f(*args, **kwargs)
   return decorated
 
 def current_user():
-  if 'username' not in session:
+  if 'userId' not in session:
     return None
   db = get_db()
-  return db.execute("SELECT * FROM User WHERE username=?", (session['username'],)).fetchone()
+  return db.execute("SELECT * FROM User WHERE userId=?", (session['userId'],)).fetchone()
 
 # root
 @app.route('/')
 def index():
-  if 'username' in session:
+  if 'userId' in session:
     return redirect(url_for('feed'))
   return redirect(url_for('login'))
 
@@ -64,8 +68,9 @@ def login():
     user = db.execute("SELECT * FROM User WHERE username = ? AND password = ?", (username, hashed_password)).fetchone()
     
     if user:
+      session['userId'] = user['userId']
       session['username'] = user['username']
-      return redirect(url_for('index'))
+      return redirect(url_for('feed'))
       
     else:
       flash("Invalid username or password.")
@@ -96,6 +101,7 @@ def register():
     except sqlite3.IntegrityError:
       flash("Username already exists! Try another one.")
   return render_template('register.html')
+  
 # user authentication - logout
 @app.route('/logout')
 def logout():
@@ -112,18 +118,18 @@ def feed():
   order = "p.created_at DESC" if sort == 'new' else "like_count DESC"
 
   posts = db.execute(f"""
-    SELECT p.post_id, p.content, p.image_url, p.created_at, u.username, 
+    SELECT p.postId, p.content, p.image_url, p.created_at, u.username, u.userId,
       COUNT(DISTINCT l.like_id) AS like_count, 
       COUNT(DISTINCT c.comment_id) AS comment_count,
-      MAX(CASE WHEN l2.username = ? THEN 1 ELSE 0 END) AS user_liked
+      MAX(CASE WHEN l2.userId = ? THEN 1 ELSE 0 END) AS user_liked
     FROM   Post p
-    JOIN   users u  ON u.username  = p.username
-    LEFT JOIN likes    l  ON l.post_id  = p.post_id
-    LEFT JOIN comments c  ON c.post_id  = p.post_id
-    LEFT JOIN likes    l2 ON l2.post_id = p.post_id AND l2.username = ?
-    GROUP  BY p.post_id
+    JOIN   users u  ON u.userId  = p.userId
+    LEFT JOIN likes    l  ON l.postId  = p.postId
+    LEFT JOIN comments c  ON c.postId  = p.postId
+    LEFT JOIN likes    l2 ON l2.postId = p.postId AND l2.userId = ?
+    GROUP  BY p.postId
     ORDER  BY {order}
-    """, (session['username'], session['username'])).fetchall()
+    """, (session['userId'], session['userId'])).fetchall()
   
   # add notification here check noti database if there is unread 
   # --> return a boolean for ui to use a red dot indicate?
