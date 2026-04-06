@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HKUgram • Fixed Login Enter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        body {
+            background-color: #FFFFFF;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding-bottom: 80px;
+            padding-top: 20px;
+            position: relative;
+        }
+
+        .logout-fixed {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 6px 12px;
+            background: #ed4956;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+            z-index: 9999;
+            display: none;
+        }
+
+        .create-fixed {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+            z-index: 9999;
+            display: none;
+        }
+
+        .theme-circles {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-left: 10px;
+        }
+        .theme-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+
+        .posts-container {
+            width: 400px;
+            margin: 0 auto;
+        }
+
+        .comment-section {
+            width: 320px;
+            background: #FCF8FA;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 16px;
+            position: absolute;
+            top: 0;
+            left: calc(50% + 220px);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .comment-section.active {
+            display: flex;
+        }
+
+        .comment-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .comment-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .comment-input-box {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            background: inherit;
+        }
+
+        .create-section {
+            width: 400px;
+            border-radius: 12px;
+            padding: 16px;
+            position: fixed;
+            top: 52%;
+            left: 5px;
+            transform: translateY(-50%);
+            background: #FCF8FA;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 999;
+        }
+        .create-section.active {
+            display: flex;
+        }
+
+        .create-upload-area {
+            width: 100%;
+            height: 420px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            border: 2px dashed #999;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            background: #FAF7F7 !important;
+            color: #D1D1D1 !important;
+        }
+        .create-upload-area img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .create-upload-area.dragover {
+            background: #d0e6ff !important;
+            border-color: #0095f6;
+        }
+
+        .create-caption {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            outline: none;
+            font-size: 13px;
+            color: black !important;
+            background: white;
+        }
+        .create-post-btn {
+            padding: 6px 14px;
+            background: #0095f6;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            align-self: flex-end;
+        }
+
+        .header {
+            padding: 15px;
+            background: #FCF8FA;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .login-box {
+            margin-top: 60px;
+            padding: 30px;
+            background: #FCF8FA;
+            border: 1px solid #ddd;
+            text-align: center;
+            border-radius: 12px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .login-box h2 {
+            margin-bottom: 25px;
+            font-size: 24px;
+            color: black !important;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            color: black !important;
+            background: white;
+        }
+        .login-box button {
+            width: 100%;
+            padding: 10px;
+            background: #0095f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .post {
+            background: #FCF8FA;
+            border-radius: 12px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        .post-header {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+        }
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #ccc;
+            margin-right: 10px;
+        }
+        .username {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .post-image {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .post-actions {
+            padding: 12px;
+            display: flex;
+            gap: 18px;
+            align-items: center;
+        }
+        .like-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            transition: 0.2s;
+            line-height: 1;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .like-btn.active {
+            color: #ed4956;
+        }
+        .comment-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+        }
+        .like-count {
+            padding: 0 12px 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .caption {
+            padding: 0 12px 12px;
+            font-size: 14px;
+        }
+        .time {
+            padding: 0 12px 12px;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .comment {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .comment-user {
+            font-weight: 600;
+            margin-right: 6px;
+        }
+        .comment-time {
+            font-size: 11px;
+            color: #999;
+        }
+        .comment-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            outline: none;
+            font-size: 14px;
+            color: black !important;
+            background: white;
+        }
+        .send-btn {
+            padding: 8px 14px;
+            background: #0095f6;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Dark / Green / Blue / Red theme: text white (except inputs) */
+        body.dark,
+        body.green,
+        body.blue,
+        body.red {
+            color: white !important;
+        }
+        body.dark .header,
+        body.green .header,
+        body.blue .header,
+        body.red .header {
+            background: #222;
+            color: white;
+        }
+        body.dark .post,
+        body.green .post,
+        body.blue .post,
+        body.red .post {
+            background: #222;
+            color: white;
+        }
+        body.dark .login-box,
+        body.green .login-box,
+        body.blue .login-box,
+        body.red .login-box {
+            background: #222;
+            border-color: #444;
+            color: white;
+        }
+        body.dark .comment-section,
+        body.green .comment-section,
+        body.blue .comment-section,
+        body.red .comment-section {
+            background: #222;
+            color: white;
+        }
+        body.dark .create-section,
+        body.green .create-section,
+        body.blue .create-section,
+        body.red .create-section {
+            background: #222;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<button class="create-fixed" id="createBtn">Create</button>
+<button class="logout-fixed" id="logoutBtn">Log out & Reset All</button>
+
+<!-- LOGIN PAGE (FIXED: wrapped in form + submit button) -->
+<div id="loginPage">
+    <div class="login-box">
+        <h2>HKUgram</h2>
+        <!-- 👇 Critical fix: wrap in form -->
+        <form onsubmit="doLogin(); return false;">
+            <input type="text" placeholder="Enter username" id="usernameInput">
+            <input type="password" placeholder="Enter password" id="passwordInput">
+            <!-- 👇 Critical fix: type="submit" -->
+            <button type="submit" id="loginBtn">Enter</button>
+        </form>
+    </div>
+</div>
+
+<!-- CONTENT PAGE -->
+<div id="feedPage" class="hidden">
+    <div class="posts-container">
+        <div class="header">
+            HKUgram
+            <div class="theme-circles">
+                <div class="theme-circle" style="background:#343D3F" onclick="setTheme('dark')"></div>
+                <div class="theme-circle" style="background:#FFFFFF" onclick="setTheme('light')"></div>
+                <div class="theme-circle" style="background:#27403C" onclick="setTheme('green')"></div>
+                <div class="theme-circle" style="background:#333C4D" onclick="setTheme('blue')"></div>
+                <div class="theme-circle" style="background:#4F3439" onclick="setTheme('red')"></div>
+            </div>
+        </div>
+        <div id="postList"></div>
+    </div>
+
+    <div class="comment-section" id="commentSection">
+        <div class="comment-title">Comment</div>
+        <div class="comment-list" id="commentList"></div>
+        <div class="comment-input-box">
+            <input class="comment-input" placeholder="Add a comment..." id="commentInput">
+            <button class="send-btn">Send</button>
+        </div>
+    </div>
+</div>
+
+<!-- CREATE POST -->
+<div class="create-section" id="createSection">
+    <div class="post-header">
+        <div class="avatar"></div>
+        <div class="username" id="displayUsername">Username</div>
+    </div>
+    <div class="create-upload-area" id="uploadArea">Click or Upload your image here</div>
+    <input type="text" class="create-caption" id="createCaption" placeholder="Write a caption...">
+    <button class="create-post-btn">Post</button>
+</div>
+
+<script>
+    const commentData = {};
+    let currentPostId = null;
+    let currentPostElement = null;
+    let selectedImage = null;
+    let currentTheme = 'light';
+    let currentUsername = '';
+
+    const loginPage = document.getElementById('loginPage');
+    const feedPage = document.getElementById('feedPage');
+    const createBtn = document.getElementById('createBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const createSection = document.getElementById('createSection');
+    const displayUsername = document.getElementById('displayUsername');
+    const usernameInput = document.getElementById('usernameInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const uploadArea = document.getElementById('uploadArea');
+    const createCaption = document.getElementById('createCaption');
+    const commentSection = document.getElementById('commentSection');
+
+    window.onload = function() {
+        resetToLogin();
+        bindAllEvents();
+    };
+
+    function bindAllEvents() {
+        // Remove duplicate enter listeners (now handled by form submit)
+        document.getElementById('commentInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') addComment();
+        });
+        createCaption.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitNewPost();
+            }
+        });
+        createBtn.onclick = toggleCreateSection;
+        logoutBtn.onclick = handleLogout;
+        document.querySelector('.create-post-btn').onclick = submitNewPost;
+        document.querySelector('.send-btn').onclick = addComment;
+    }
+
+    // Single login function (called by BOTH click AND Enter)
+    function doLogin() {
+        const name = usernameInput.value.trim();
+        if (!name) {
+            alert("Please enter username!");
+            return;
+        }
+        currentUsername = name;
+        loginPage.classList.add('hidden');
+        feedPage.classList.remove('hidden');
+        createBtn.style.display = 'block';
+        logoutBtn.style.display = 'block';
+        displayUsername.textContent = currentUsername;
+        loadSortedPosts();
+        initImageUpload();
+        setTheme(currentTheme);
+    }
+
+    function handleLogout() {
+        createSection.classList.remove('active');
+        uploadArea.innerHTML = "Click or Upload your image here";
+        createCaption.value = "";
+        selectedImage = null;
+        resetToLogin();
+    }
+
+    function resetToLogin() {
+        currentUsername = '';
+        loginPage.classList.remove('hidden');
+        feedPage.classList.add('hidden');
+        createBtn.style.display = 'none';
+        logoutBtn.style.display = 'none';
+        usernameInput.value = '';
+        passwordInput.value = '';
+    }
+
+    function getRealDateTime() {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        return `${h}:${m} ${now.getDate()}/${now.getMonth()+1}/${now.getFullYear().toString().slice(2)}`;
+    }
+
+    function toggleLike(btn) {
+    let countEl = btn.closest('.post-actions').nextElementSibling;
+    let current = parseInt(countEl.innerText) || 0;
+
+    if (btn.classList.contains('active')) {
+        btn.classList.remove('active');
+        btn.innerText = '♡';
+        countEl.innerText = '0 likes';
+    } else {
+        btn.classList.add('active');
+        btn.innerText = '❤️';
+        countEl.innerText = '1 like';
+    }
+    }
+
+    function toggleCommentSection(postId, btn) {
+        const s = commentSection;
+        const p = btn.closest('.post');
+        currentPostId = postId;
+        currentPostElement = p;
+        s.classList.toggle('active');
+        loadComments();
+    }
+
+    function loadComments() {
+        const list = document.getElementById('commentList');
+        list.innerHTML = '';
+        const cs = commentData[currentPostId] || [];
+        cs.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'comment';
+            div.innerHTML = `<span class="comment-user">${c.user}</span>${c.text}<div class="comment-time">${c.time}</div>`;
+            list.appendChild(div);
+        });
+    }
+
+    function addComment() {
+        const inp = document.getElementById('commentInput');
+        const t = inp.value.trim();
+        if (!t || !currentPostId) return;
+        if (!commentData[currentPostId]) commentData[currentPostId] = [];
+        commentData[currentPostId].push({
+            user: currentUsername,
+            text: t,
+            time: getRealDateTime()
+        });
+        inp.value = '';
+        loadComments();
+    }
+
+    function toggleCreateSection() {
+        createSection.classList.toggle('active');
+    }
+
+    function initImageUpload() {
+        uploadArea.onclick = () => {
+            const i = document.createElement('input');
+            i.type = 'file';
+            i.accept = 'image/*';
+            i.onchange = e => {
+                const f = e.target.files[0];
+                if (!f) return;
+                const r = new FileReader();
+                r.onload = ev => {
+                    selectedImage = ev.target.result;
+                    uploadArea.innerHTML = `<img src="${selectedImage}">`;
+                };
+                r.readAsDataURL(f);
+            };
+            i.click();
+        };
+        uploadArea.addEventListener('dragover', e => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const f = e.dataTransfer.files[0];
+            if (!f || !f.type.startsWith('image/')) return;
+            const r = new FileReader();
+            r.onload = ev => {
+                selectedImage = ev.target.result;
+                uploadArea.innerHTML = `<img src="${selectedImage}">`;
+            };
+            r.readAsDataURL(f);
+        });
+    }
+
+    function submitNewPost() {
+        if (!selectedImage) {
+            alert('Select an image first!');
+            return;
+        }
+        const cap = createCaption.value.trim();
+        const pid = Date.now();
+        const post = document.createElement('div');
+        post.className = 'post';
+        post.innerHTML = `
+            <div class="post-header">
+                <div class="avatar"></div>
+                <div class="username">${currentUsername}</div>
+            </div>
+            <img class="post-image" src="${selectedImage}">
+            <div class="post-actions">
+                <button class="like-btn" onclick="toggleLike(this)">♡</button>
+                <button class="comment-btn" onclick="toggleCommentSection(${pid}, this)">💬</button>
+            </div>
+            <div class="like-count">0 likes</div>
+            <div class="caption">${cap}</div>
+            <div class="time">${getRealDateTime()}</div>
+        `;
+        document.getElementById('postList').prepend(post);
+        createSection.classList.remove('active');
+        uploadArea.innerHTML = "Click or Upload your image here";
+        createCaption.value = "";
+        selectedImage = null;
+    }
+
+    function loadSortedPosts() {}
+
+    function setTheme(theme) {
+        currentTheme = theme;
+        document.body.className = '';
+        if (theme !== 'light') {
+            document.body.classList.add(theme);
+        }
+    }
+</script>
+</body>
+</html>
