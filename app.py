@@ -5,7 +5,7 @@ from datetime import datetime
 from functools import wraps
 from flask import (Flask, g, render_template, request, redirect, url_for, session, jsonify, flash)
 
-DATABASE = 'hkugram.db'
+DATABASE = 'HkuGram.db'
 SECRET_KEY = 'hkugram_comp3278'
 
 app = Flask(__name__)
@@ -186,13 +186,13 @@ def view_post(post_id):
   # inner loop check if child's parent = current parent @ HTML
   return render_template('post.html', post=post, Parentcomments=Parentcomments, Childcomments = Childcomments, user=current_user())
 
-@app.route('/post/<int:post_id>/delete', methods=['POST'])
+@app.route('/post/<int:postId>/delete', methods=['POST'])
 @login_required
-def delete_post(post_id):
+def delete_post(postId):
   db = get_db()
-  post = db.execute("SELECT username FROM Post WHERE post_id=?",(post_id,)).fetchone()
+  post = db.execute("SELECT username FROM Post WHERE postId=?",(postId,)).fetchone()
   if post and post['username'] == session['username']:
-    db.execute("DELETE FROM Post WHERE post_id=?", (post_id,))
+    db.execute("DELETE FROM Post WHERE postId=?", (postId,))
     db.commit()
     flash('Post deleted.', 'success')
   return redirect(url_for('feed'))
@@ -200,24 +200,24 @@ def delete_post(post_id):
 # Likes
 @app.route('/post/<int:post_id>/like', methods=['POST'])
 @login_required
-def toggle_like(post_id):
-# def toggle_like(post_id, emoji):
+def toggle_like(postId):
+# def toggle_like(postId, emoji):
   db  = get_db()
   username = session['username']
   existing = db.execute(
-    "SELECT like_id FROM likes WHERE post_id=? AND username=?",(post_id, username)
-    # "SELECT like_id FROM likes WHERE post_id=? AND username=? AND emoji=?",(post_id, username, emoji)
+    "SELECT like_id FROM likes WHERE postId=? AND username=?",(postId, username)
+    # "SELECT like_id FROM likes WHERE postId=? AND username=? AND emoji=?",(postId, username, emoji)
   ).fetchone()
   if existing:
-    db.execute("DELETE FROM likes WHERE post_id=? AND username=?",(post_id, username))
+    db.execute("DELETE FROM likes WHERE postId=? AND username=?",(postId, username))
     liked = False
   else:
-    db.execute("INSERT INTO likes (post_id, username) VALUES (?,?)", (post_id, username))
-    # db.execute("INSERT INTO likes (post_id, username) VALUES (?,?,?)",(post_id, username, emoji))
+    db.execute("INSERT INTO likes (postId, username) VALUES (?,?)", (postId, username))
+    # db.execute("INSERT INTO likes (postId, username) VALUES (?,?,?)",(postId, username, emoji))
     liked = True
   db.commit()
   count = db.execute(
-    "SELECT COUNT(*) FROM likes WHERE post_id=?", (post_id,)
+    "SELECT COUNT(*) FROM likes WHERE postId=?", (postId,)
   ).fetchone()[0]
   return jsonify({'liked': liked, 'count': count})
 
@@ -228,7 +228,7 @@ def add_comment(post_id, parentComment):
     content = request.form.get('content', '').strip()
     if content:
         db = get_db()
-        db.execute("INSERT INTO comments (post_id, username, content, parentComment) VALUES (?,?,?,?)",
+        db.execute("INSERT INTO comments (postId, username, content, parent_comment_id) VALUES (?,?,?,?)",
                    (post_id, session['username'], content, parentComment)) # HTML send back the button clicked with its parentid
         db.commit()
     return redirect(url_for('view_post', post_id=post_id))
@@ -240,7 +240,7 @@ if __name__ == '__main__':
     # still apply any new schema changes
     with app.app_context():
       db = get_db()
-      with open('schema.sql') as f:
+      with open('HkuGram.sql') as f:
         db.executescript(f.read())
       db.commit()
   app.run(debug=True, port=5000, threaded=True)
