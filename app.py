@@ -136,7 +136,7 @@ def feed():
   sort = request.args.get('sort', 'new') # depend on UI
   db   = get_db()
   order = "p.created_at DESC" if sort == 'new' else "like_count DESC"
-  posts = db.execute(f"""SELECT p.*, u.username, u.userId,
+  posts = db.execute(f"""SELECT p.*, u.username, u.userId, u.profilePicture
     COUNT(DISTINCT l.userId) AS like_count, 
     COUNT(DISTINCT c.commentId) AS comment_count,
     MAX(CASE WHEN l2.userId = ? THEN 1 ELSE 0 END) AS user_liked
