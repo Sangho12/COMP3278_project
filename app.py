@@ -84,7 +84,7 @@ def register():
   if request.method == 'POST':
     username = request.form.get('username')
     password = request.form.get('password')
-    
+    profile_pic = request.form.get('profile_picture') or 'https://example.com/default-avatar.png'
     if not username or not password:
       flash("Incorrect username or password.")
       return redirect(url_for('register'))
@@ -93,7 +93,9 @@ def register():
     db = get_db()
     
     try:
-      db.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_password))
+      db.execute(
+        "INSERT INTO users (username, password, profilePicture) VALUES (?, ?, ?)", 
+        (username, hashed_password, profile_pic)
       db.commit()
       flash("Registration successful! Please go to log in.")
       return redirect(url_for('login'))
@@ -110,6 +112,22 @@ def logout():
   session.pop('username', None)
   flash("You have been logged out.")
   return redirect(url_for('login'))
+
+# Edit Profile Route
+
+@app.route('/profile/edit', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+  db = get_db()
+  if request.method == 'POST':
+    new_pic = request.form.get('profile_picture')
+    db.execute("UPDATE users SET profilePicture = ? WHERE userId = ?", (new_pic, session['userId']))
+    db.commit()
+    flash("Profile updated!")
+    return redirect(url_for('profile', username=session['username']))
+  user = db.execute("SELECT * FROM users WHERE userId = ?", (session['userId'],)).fetchone()
+  return render_template('edit_profile.html', user=user)
+
 
 # Feed
 @app.route('/feed') # feed.html
