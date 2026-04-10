@@ -317,7 +317,7 @@ if __name__ == '__main__':
       with open('HkuGram.sql') as f:
         db.executescript(f.read())
       db.commit()
-  app.run(debug=True, port=5001, threaded=True)
+  app.run(debug=True, port=5000, threaded=True)
 
 
 
