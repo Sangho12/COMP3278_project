@@ -112,7 +112,7 @@ def logout():
   return redirect(url_for('login'))
 
 # Feed
-@app.route('/feed') #html feed
+@app.route('/feed') # feed.html
 @login_required
 def feed():
   sort = request.args.get('sort', 'new') # depend on UI
@@ -130,9 +130,6 @@ def feed():
     GROUP  BY p.postId
     ORDER  BY {order}
     """, (session['userId'], session['userId'])).fetchall()
-  
-  # add notification here check noti database if there is unread 
-  # --> return a boolean for ui to use a red dot indicate?
   return render_template('feed.html', posts=posts, sort=sort, user=current_user())
   
 # Posts
@@ -245,6 +242,45 @@ def add_comment(postId):
     db.commit()
   return redirect(url_for('view_post', postId=postId))
 
+# Profile
+@app.route('/profile/<username>') # profile.html
+@login_required
+def profile(username):
+  db   = get_db()
+  prof = db.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+  if not prof:
+    flash('User not found.', 'error')
+    return redirect(url_for('feed'))
+
+  posts = db.execute("""
+    SELECT p.*, COUNT(DISTINCT l.userId) AS like_count,
+    COUNT(DISTINCT c.commentId) AS comment_count
+    FROM   posts p
+    LEFT JOIN likes l ON l.postId = p.postId
+    LEFT JOIN comments c ON c.postId = p.postId
+    WHERE  p.userId = ?
+    GROUP  BY p.postId
+    ORDER  BY p.created_at DESC
+  """, (prof['userId'],)).fetchall()
+
+  print(posts)
+  stats = db.execute("SELECT * FROM v_user_activity WHERE userId=?",(prof['userId'],)).fetchone()
+
+  return render_template('profile.html', prof=prof, posts=posts, stats=stats, user=current_user())
+
+# Analytics
+@app.route('/analytics') # analytics.html
+@login_required
+def analytics():
+  db = get_db()
+  top_posts = db.execute("SELECT * FROM v_post_likes ORDER BY like_count DESC LIMIT 10").fetchall()
+  top_users = db.execute("SELECT * FROM v_user_activity ORDER BY post_count DESC LIMIT 10").fetchall()
+  total_posts = db.execute("SELECT COUNT(*) FROM posts").fetchone()[0]
+  total_users = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+  total_likes = db.execute("SELECT COUNT(*) FROM likes").fetchone()[0]
+  return render_template('analytics.html',top_posts=top_posts, top_users=top_users, total_posts=total_posts, 
+                         total_users=total_users, total_likes=total_likes, user=current_user())
+  
 if __name__ == '__main__':
   if not os.path.exists(DATABASE):
     init_db()
