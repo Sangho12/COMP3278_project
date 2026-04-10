@@ -120,9 +120,9 @@ def feed():
   order = "p.created_at DESC" if sort == 'new' else "like_count DESC"
 
   posts = db.execute(f"""SELECT p.postId, p.content, p.image_url, p.created_at, u.username, u.userId,
-      COUNT(DISTINCT l.userId) AS like_count, 
-      COUNT(DISTINCT c.commentId) AS comment_count,
-      MAX(CASE WHEN l2.userId = ? THEN 1 ELSE 0 END) AS user_liked
+    COUNT(DISTINCT l.userId) AS like_count, 
+    COUNT(DISTINCT c.commentId) AS comment_count,
+    MAX(CASE WHEN l2.userId = ? THEN 1 ELSE 0 END) AS user_liked
     FROM posts p
     JOIN users u ON u.userId = p.userId
     LEFT JOIN likes l ON l.postId = p.postId
