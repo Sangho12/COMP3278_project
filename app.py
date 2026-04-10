@@ -96,6 +96,7 @@ def register():
       db.execute(
         "INSERT INTO users (username, password, profilePicture) VALUES (?, ?, ?)", 
         (username, hashed_password, profile_pic)
+      )
       db.commit()
       flash("Registration successful! Please go to log in.")
       return redirect(url_for('login'))
@@ -316,7 +317,7 @@ if __name__ == '__main__':
       with open('HkuGram.sql') as f:
         db.executescript(f.read())
       db.commit()
-  app.run(debug=True, port=5000, threaded=True)
+  app.run(debug=True, port=5001, threaded=True)
 
 
 
