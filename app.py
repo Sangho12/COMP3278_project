@@ -112,13 +112,12 @@ def logout():
   return redirect(url_for('login'))
 
 # Feed
-@app.route('/feed')
+@app.route('/feed') #html feed
 @login_required
 def feed():
   sort = request.args.get('sort', 'new') # depend on UI
   db   = get_db()
   order = "p.created_at DESC" if sort == 'new' else "like_count DESC"
-
   posts = db.execute(f"""SELECT p.postId, p.content, p.image_url, p.created_at, u.username, u.userId,
     COUNT(DISTINCT l.userId) AS like_count, 
     COUNT(DISTINCT c.commentId) AS comment_count,
@@ -137,90 +136,95 @@ def feed():
   return render_template('feed.html', posts=posts, sort=sort, user=current_user())
   
 # Posts
-@app.route('/post/new', methods=['GET','POST'])
+@app.route('/post/new', methods=['GET','POST']) # new_post.html
 @login_required 
 def new_post():
   if request.method == 'POST':
     content = request.form['content'].strip() or None
     image_url = request.form.get('image_url', '').strip() or None
+    feeling_emoji = request.form.get('feeling_emoji', '').strip() or None
     if content is None and image_url is None: # similar to facebook (can be thoughts, pic, or both in a post)
       flash('Share your thoughts!', 'error')
-      return render_template('new_post.html', user=current_user()) #the new post html DEPEND on URL
+      return render_template('new_post.html', user=current_user())
     db = get_db()
-    db.execute("INSERT INTO Post (userId, content, image_url) VALUES (?,?,?)", (session['userrId'], content, image_url)) 
+    db.execute("INSERT INTO posts (userId, content, image_url, feeling_emoji) VALUES (?,?,?,?)", (session['userId'], content, image_url, feeling_emoji)) 
     db.commit()
     flash('Post published!', 'success')
-    return redirect(url_for('feed'))# to feed url
-  return render_template('new_post.html', user=current_user()) #the new post html DEPEND ON UI
+    return redirect(url_for('feed'))
+  return render_template('new_post.html', user=current_user())
 
+def build_comment_tree(comments):
+    by_id = {}
+    for c in comments:
+        by_id[c['commentId']] = {**c, 'children': []}
+    roots = []
+    for c in comments:
+        node = by_id[c['commentId']]
+        parent_id = c.get('parent_comment_id')
+        if parent_id in (None, 0):
+            roots.append(node)
+        else:
+            parent = by_id.get(parent_id)
+            if parent:
+                parent['children'].append(node)
+            else:
+                roots.append(node)
+    return roots
 
-@app.route('/post/<int:post_id>')
+@app.route('/post/<int:postId>') # post.html
 @login_required
-def view_post(post_id):
+def view_post(postId):
   db = get_db()
-  post = db.execute("""
-    SELECT p.*, u.username,
-    COUNT(DISTINCT l.like_id) AS like_count,
-    MAX(CASE WHEN l2.username=? THEN 1 ELSE 0 END) AS user_liked
+  post = db.execute("""SELECT p.*, u.username,
+    COUNT(DISTINCT l.userId) AS like_count,
+    MAX(CASE WHEN l2.userId=? THEN 1 ELSE 0 END) AS user_liked
     FROM   posts p
-    JOIN   users u ON u.username = p.username
-    LEFT JOIN likes l  ON l.post_id  = p.post_id
-    LEFT JOIN likes l2 ON l2.post_id = p.post_id AND l2.username = ?
-    WHERE  p.post_id = ?
-    GROUP  BY p.post_id
-    """, (session['username'], session['username'], post_id)).fetchone()
+    JOIN   users u ON u.userId = p.userId
+    LEFT JOIN likes l  ON l.postId  = p.postId
+    LEFT JOIN likes l2 ON l2.postId = p.postId AND l2.userId = ?
+    WHERE  p.postId = ?
+    GROUP  BY p.postId
+    """, (session['userId'], session['userId'], postId)).fetchone()
   if not post:
     flash('Post not found.', 'error')
     return redirect(url_for('feed'))
 
-  Parentcomments = db.execute("""
-    SELECT c.*, u.username
-    FROM   comments c
-    JOIN   users u ON u.username = c.username
-    WHERE  c.post_id = ? AND c.parentComment IS NULL
-    ORDER  BY c.created_at ASC
-    """, (post_id,)).fetchall()
-  
-  Childcomments = db.execute("""
+  comments = db.execute("""
     SELECT c.*, u.username
     FROM   comments c
     JOIN   users u ON u.userId = c.userId
-    WHERE  c.post_id = ? AND c.parentComment IS NOT NULL
+    WHERE  c.postId = ?
     ORDER  BY c.created_at ASC
-    """, (post_id,)).fetchall() 
-  # for listing parent and child comments nested for loop 
-  # outter loop parentcomments
-  # inner loop check if child's parent = current parent @ HTML
-  return render_template('post.html', post=post, Parentcomments=Parentcomments, Childcomments = Childcomments, user=current_user())
+    """, (postId,)).fetchall()
+  
+  comment_tree = build_comment_tree([dict(row) for row in comments])
+  return render_template('post.html', post=post, comments = comment_tree, user=current_user())
 
 @app.route('/post/<int:postId>/delete', methods=['POST'])
 @login_required
 def delete_post(postId):
   db = get_db()
-  post = db.execute("SELECT username FROM Post WHERE postId=?",(postId,)).fetchone()
+  post = db.execute("SELECT userId FROM posts WHERE postId=?",(postId,)).fetchone()
   if post and post['userId'] == session['userId']:
-    db.execute("DELETE FROM Post WHERE postId=?", (postId,))
+    db.execute("DELETE FROM posts WHERE postId=?", (postId,))
     db.commit()
     flash('Post deleted.', 'success')
   return redirect(url_for('feed'))
 
 # Likes
-@app.route('/post/<int:post_id>/like', methods=['POST'])
+@app.route('/post/<int:postId>/like', methods=['POST'])
 @login_required
 def toggle_like(postId):
-# def toggle_like(postId, emoji):
   db  = get_db()
-  uid = session['userId']
+  userId = session['userId']
   existing = db.execute(
-    "SELECT like_id FROM likes WHERE postId=? AND userId=?",(postId, userId)
-    # "SELECT like_id FROM likes WHERE postId=? AND username=? AND emoji=?",(postId, username, emoji)
+    "SELECT * FROM likes WHERE postId=? AND userId=?",(postId, userId)
   ).fetchone()
   if existing:
     db.execute("DELETE FROM likes WHERE postId=? AND userId=?",(postId, userId))
     liked = False
   else:
     db.execute("INSERT INTO likes (postId, userId) VALUES (?,?)", (postId, userId))
-    # db.execute("INSERT INTO likes (postId, username) VALUES (?,?,?)",(postId, username, emoji))
     liked = True
   db.commit()
   count = db.execute(
@@ -228,17 +232,18 @@ def toggle_like(postId):
   ).fetchone()[0]
   return jsonify({'liked': liked, 'count': count})
 
-# Comments
-@app.route('/post/<int:post_id>/comment', methods=['POST'])
+# Comments 
+@app.route('/post/<int:postId>/comment', methods=['POST']) #post.html
 @login_required
-def add_comment(post_id, parentComment):
-    content = request.form.get('content', '').strip()
-    if content:
-        db = get_db()
-        db.execute("INSERT INTO comments (postId, userId, content, parent_comment_id) VALUES (?,?,?,?)",
-                   (post_id, session['userId'], content, parentComment)) # HTML send back the button clicked with its parentid
-        db.commit()
-    return redirect(url_for('view_post', post_id=post_id))
+def add_comment(postId):
+  content = request.form.get('content', '').strip()
+  parentComment = request.form.get('parentComment')
+  if content:
+    db = get_db()
+    db.execute("INSERT INTO comments (postId, userId, content, parent_comment_id) VALUES (?,?,?,?)",
+               (postId, session['userId'], content, parentComment)) # HTML send back the button clicked with its parentid
+    db.commit()
+  return redirect(url_for('view_post', postId=postId))
 
 if __name__ == '__main__':
   if not os.path.exists(DATABASE):
