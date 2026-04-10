@@ -190,7 +190,7 @@ def build_comment_tree(comments):
 @login_required
 def view_post(postId):
   db = get_db()
-  post = db.execute("""SELECT p.*, u.username,
+  post = db.execute("""SELECT p.*, u.username, u.profilePicture
     COUNT(DISTINCT l.userId) AS like_count,
     MAX(CASE WHEN l2.userId=? THEN 1 ELSE 0 END) AS user_liked
     FROM   posts p
@@ -205,7 +205,7 @@ def view_post(postId):
     return redirect(url_for('feed'))
 
   comments = db.execute("""
-    SELECT c.*, u.username
+    SELECT c.*, u.username, u.profilePicture
     FROM   comments c
     JOIN   users u ON u.userId = c.userId
     WHERE  c.postId = ?
@@ -224,6 +224,8 @@ def delete_post(postId):
     db.execute("DELETE FROM posts WHERE postId=?", (postId,))
     db.commit()
     flash('Post deleted.', 'success')
+  else:
+    flash('Unauthorized action.', 'error')
   return redirect(url_for('feed'))
 
 # Likes
@@ -292,7 +294,12 @@ def profile(username):
 def analytics():
   db = get_db()
   top_posts = db.execute("SELECT * FROM v_post_likes ORDER BY like_count DESC LIMIT 10").fetchall()
-  top_users = db.execute("SELECT * FROM v_user_activity ORDER BY post_count DESC LIMIT 10").fetchall()
+  top_users = db.execute("""
+        SELECT a.*, u.profilePicture 
+        FROM v_user_activity a
+        JOIN users u ON a.userId = u.userId
+        ORDER BY post_count DESC LIMIT 10
+    """).fetchall()
   total_posts = db.execute("SELECT COUNT(*) FROM posts").fetchone()[0]
   total_users = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
   total_likes = db.execute("SELECT COUNT(*) FROM likes").fetchone()[0]
