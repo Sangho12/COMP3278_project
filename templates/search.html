@@ -1,0 +1,39 @@
+{% extends 'base.html' %} {% block title %}Search users{% endblock %} {% block
+content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <h3>Search users</h3>
+    <form method="get" action="{{ url_for('search') }}" class="mb-3">
+      <div class="input-group">
+        <input
+          class="form-control"
+          name="q"
+          value="{{ q }}"
+          placeholder="Search by username"
+        />
+        <button class="btn btn-primary" type="submit">Search</button>
+      </div>
+    </form>
+
+    {% if q and results|length == 0 %}
+    <p class="text-muted">No users found for "{{ q }}"</p>
+    {% endif %}
+
+    <div class="list-group">
+      {% for r in results %}
+      <a
+        href="{{ url_for('profile', username=r.username) }}"
+        class="list-group-item list-group-item-action d-flex align-items-center"
+      >
+        <img
+          src="{{ r.profilePicture }}"
+          class="avatar me-3"
+          style="width: 40px; height: 40px"
+        />
+        <div>{{ r.username }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

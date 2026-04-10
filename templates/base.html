@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}HkuGram{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* Demo UI styles (adapted from Demo_UI.html) */
+      * {
+        box-sizing: border-box;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      body {
+        background-color: #ffffff;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding-bottom: 80px;
+        padding-top: 20px;
+        position: relative;
+      }
+      .header {
+        padding: 15px;
+        background: #fcf8fa;
+        border-radius: 12px;
+        text-align: center;
+        font-size: 22px;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 15px;
+      }
+      .posts-container {
+        width: 400px;
+        margin: 0 auto;
+      }
+      .post {
+        background: #fcf8fa;
+        border-radius: 12px;
+        margin: 15px 0;
+        overflow: hidden;
+      }
+      .post-header {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+      }
+      .avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: #ccc;
+        margin-right: 10px;
+      }
+      .username {
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .post-image {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .post-actions {
+        padding: 12px;
+        display: flex;
+        gap: 18px;
+        align-items: center;
+      }
+      .like-btn {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        transition: 0.2s;
+        line-height: 1;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .like-btn.active {
+        color: #ed4956;
+      }
+      .comment-btn {
+        background: none;
+        border: none;
+        font-size: 22px;
+        cursor: pointer;
+      }
+      .like-count {
+        padding: 0 12px 8px;
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .caption {
+        padding: 0 12px 12px;
+        font-size: 14px;
+      }
+      .time {
+        padding: 0 12px 12px;
+        font-size: 12px;
+        color: #888;
+      }
+
+      /* Floating controls and panels */
+      .logout-fixed {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 6px 12px;
+        background: #ed4956;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 13px;
+        cursor: pointer;
+        z-index: 9999;
+        display: none;
+      }
+      .create-fixed {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        padding: 6px 12px;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 13px;
+        cursor: pointer;
+        z-index: 9999;
+        display: none;
+      }
+      .comment-section {
+        width: 320px;
+        background: #fcf8fa;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        padding: 16px;
+        position: absolute;
+        top: 0;
+        left: calc(50% + 220px);
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .comment-section.active {
+        display: flex;
+      }
+      .create-section {
+        width: 400px;
+        border-radius: 12px;
+        padding: 16px;
+        position: fixed;
+        top: 52%;
+        left: 5px;
+        transform: translateY(-50%);
+        background: #fcf8fa;
+        display: none;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 999;
+      }
+      .create-section.active {
+        display: flex;
+      }
+      .create-upload-area {
+        width: 100%;
+        height: 420px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        border: 2px dashed #999;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        background: #faf7f7 !important;
+        color: #d1d1d1 !important;
+      }
+      .create-upload-area img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+      .create-caption {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: 20px;
+        border: 1px solid #ccc;
+        outline: none;
+        font-size: 13px;
+        color: black !important;
+        background: white;
+      }
+      .create-post-btn {
+        padding: 6px 14px;
+        background: #0095f6;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 13px;
+        align-self: flex-end;
+      }
+
+      /* small helpers */
+      body {
+        padding-top: 70px;
+      }
+      .post-img {
+        max-width: 100%;
+        height: auto;
+      }
+      .comment {
+        margin-left: 1.25rem;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+      <div class="container">
+        <a class="navbar-brand" href="{{ url_for('feed') }}">HkuGram</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#nav"
+          aria-controls="nav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="nav">
+          <ul class="navbar-nav ms-auto">
+            {% if user %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('feed') }}">Feed</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('new_post') }}">New Post</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('analytics') }}"
+                >Analytics</a
+              >
+            </li>
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="userMenu"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                >{{ user.username }}</a
+              >
+              <ul
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="userMenu"
+              >
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{{ url_for('profile', username=user.username) }}"
+                    >Profile</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{ url_for('new_story') }}"
+                    >New Story</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{ url_for('edit_profile') }}"
+                    >Edit Profile</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="{{ url_for('logout') }}"
+                    >Log out</a
+                  >
+                </li>
+              </ul>
+            </li>
+            {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('login') }}">Log in</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, msg in messages %}
+      <div
+        class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
+        role="alert"
+      >
+        {{ msg }}
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      {% endfor %} {% endif %} {% endwith %} {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+
+    <!-- Demo UI floating elements and script (adapted) -->
+    <button class="create-fixed" id="createBtn">Create</button>
+    <button class="logout-fixed" id="logoutBtn">Log out & Reset All</button>
+
+    <div class="comment-section" id="commentSection">
+      <div class="comment-title">Comment</div>
+      <div class="comment-list" id="commentList"></div>
+      <div class="comment-input-box">
+        <input
+          class="comment-input"
+          placeholder="Add a comment..."
+          id="commentInput"
+        />
+        <button class="send-btn">Send</button>
+      </div>
+    </div>
+
+    <div class="create-section" id="createSection">
+      <div class="post-header">
+        <img
+          src="{{ user.profilePicture if user else url_for('static', filename='default-avatar.png') }}"
+          class="avatar"
+        />
+        <div class="username" id="displayUsername">
+          {{ user.username if user else 'Guest' }}
+        </div>
+      </div>
+      <div class="create-upload-area" id="uploadArea">
+        Click or Upload your image here
+      </div>
+      <input
+        type="text"
+        class="create-caption"
+        id="createCaption"
+        placeholder="Write a caption..."
+      />
+      <button class="create-post-btn">Post</button>
+    </div>
+
+    <script>
+      // Minimal Demo UI script adapted to server-side rendering.
+      const commentData = {};
+      let currentPostId = null;
+      let currentPostElement = null;
+      let selectedImage = null;
+      let currentTheme = "light";
+      // currentUsername is set from server `user` if available
+      const currentUsername = "{{ user.username if user else '' }}";
+      const defaultAvatar =
+        "{{ user.profilePicture if user else url_for('static', filename='default-avatar.png') }}";
+
+      const createBtn = document.getElementById("createBtn");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const createSection = document.getElementById("createSection");
+      const displayUsername = document.getElementById("displayUsername");
+      const uploadArea = document.getElementById("uploadArea");
+      const createCaption = document.getElementById("createCaption");
+      const commentSection = document.getElementById("commentSection");
+
+      window.addEventListener("load", () => {
+        bindAllEvents();
+        // show floating controls only for logged-in user
+        if (currentUsername) {
+          createBtn.style.display = "block";
+          logoutBtn.style.display = "block";
+          displayUsername.textContent = currentUsername;
+        }
+        initImageUpload();
+      });
+
+      function bindAllEvents() {
+        document
+          .querySelectorAll(".send-btn")
+          .forEach((b) => b.addEventListener("click", addComment));
+        createBtn.onclick = () => createSection.classList.toggle("active");
+        logoutBtn.onclick = handleLogout;
+        document
+          .querySelectorAll(".create-post-btn")
+          .forEach((b) => b.addEventListener("click", submitNewPost));
+        // delegate like and comment buttons
+        document.addEventListener("click", (e) => {
+          const like = e.target.closest(".like-btn");
+          if (like) {
+            toggleLike(like);
+            return;
+          }
+          const cbtn = e.target.closest(".comment-btn");
+          if (cbtn) {
+            const pid = cbtn.dataset.postId;
+            toggleCommentSection(pid, cbtn);
+            return;
+          }
+        });
+      }
+
+      function handleLogout() {
+        createSection.classList.remove("active");
+        uploadArea.innerHTML = "Click or Upload your image here";
+        createCaption.value = "";
+        selectedImage = null;
+        // On server-enabled apps you'd call /logout; here we just reload the page
+        window.location = "{{ url_for('logout') }}";
+      }
+
+      function getRealDateTime() {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, "0");
+        const m = String(now.getMinutes()).padStart(2, "0");
+        return `${h}:${m} ${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear().toString().slice(2)}`;
+      }
+
+      function toggleLike(btn) {
+        let countEl = btn.closest(".post").querySelector(".like-count");
+        let current = parseInt(countEl.dataset.count || "0");
+        if (btn.classList.contains("active")) {
+          btn.classList.remove("active");
+          btn.innerText = "♡";
+          countEl.dataset.count = Math.max(0, current - 1);
+        } else {
+          btn.classList.add("active");
+          btn.innerText = "❤️";
+          countEl.dataset.count = current + 1;
+        }
+        const n = parseInt(countEl.dataset.count);
+        countEl.innerText = n === 1 ? "1 like" : `${n} likes`;
+      }
+
+      function toggleCommentSection(postId, btn) {
+        const s = commentSection;
+        const p = btn.closest(".post");
+        currentPostId = postId;
+        currentPostElement = p;
+        s.classList.toggle("active");
+        loadComments();
+      }
+
+      function loadComments() {
+        const list = document.getElementById("commentList");
+        list.innerHTML = "";
+        const cs = commentData[currentPostId] || [];
+        cs.forEach((c) => {
+          const div = document.createElement("div");
+          div.className = "comment";
+          div.innerHTML = `<span class="comment-user">${c.user}</span>${c.text}<div class="comment-time">${c.time}</div>`;
+          list.appendChild(div);
+        });
+      }
+
+      function addComment() {
+        const inp = document.getElementById("commentInput");
+        const t = inp.value.trim();
+        if (!t || !currentPostId) return;
+        if (!commentData[currentPostId]) commentData[currentPostId] = [];
+        commentData[currentPostId].push({
+          user: currentUsername || "You",
+          text: t,
+          time: getRealDateTime(),
+        });
+        inp.value = "";
+        loadComments();
+      }
+
+      function initImageUpload() {
+        uploadArea.onclick = () => {
+          const i = document.createElement("input");
+          i.type = "file";
+          i.accept = "image/*";
+          i.onchange = (e) => {
+            const f = e.target.files[0];
+            if (!f) return;
+            const r = new FileReader();
+            r.onload = (ev) => {
+              selectedImage = ev.target.result;
+              uploadArea.innerHTML = `<img src="${selectedImage}">`;
+            };
+            r.readAsDataURL(f);
+          };
+          i.click();
+        };
+        uploadArea.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          uploadArea.classList.add("dragover");
+        });
+        uploadArea.addEventListener("dragleave", () =>
+          uploadArea.classList.remove("dragover"),
+        );
+        uploadArea.addEventListener("drop", (e) => {
+          e.preventDefault();
+          uploadArea.classList.remove("dragover");
+          const f = e.dataTransfer.files[0];
+          if (!f || !f.type.startsWith("image/")) return;
+          const r = new FileReader();
+          r.onload = (ev) => {
+            selectedImage = ev.target.result;
+            uploadArea.innerHTML = `<img src="${selectedImage}">`;
+          };
+          r.readAsDataURL(f);
+        });
+      }
+
+      function submitNewPost() {
+        if (!selectedImage) {
+          alert("Select an image first!");
+          return;
+        }
+        const cap = createCaption.value.trim();
+        const pid = Date.now();
+        const post = document.createElement("div");
+        post.className = "post";
+        post.innerHTML = `
+            <div class="post-header">
+                <img class="avatar" src="${defaultAvatar}">
+                <div class="username">${currentUsername || "You"}</div>
+            </div>
+            <img class="post-image" src="${selectedImage}">
+            <div class="post-actions">
+                <button class="like-btn">♡</button>
+                <button class="comment-btn" data-post-id="${pid}">💬</button>
+            </div>
+            <div class="like-count" data-count="0">0 likes</div>
+            <div class="caption">${cap}</div>
+            <div class="time">${getRealDateTime()}</div>
+        `;
+        const list = document.getElementById("postList");
+        if (list) list.prepend(post);
+        createSection.classList.remove("active");
+        uploadArea.innerHTML = "Click or Upload your image here";
+        createCaption.value = "";
+        selectedImage = null;
+      }
+    </script>
+  </body>
+</html>

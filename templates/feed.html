@@ -1,0 +1,104 @@
+{% extends 'base.html' %} {% block title %}Feed - HkuGram{% endblock %} {% block
+content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Feed</h2>
+  <div class="d-flex gap-2 align-items-center">
+    <a class="btn btn-primary" href="{{ url_for('new_story') }}">Add Story</a>
+    <a
+      class="btn btn-outline-secondary"
+      href="{{ url_for('feed', sort='new') }}"
+      >Newest</a
+    >
+    <a
+      class="btn btn-outline-secondary"
+      href="{{ url_for('feed', sort='top') }}"
+      >Top</a
+    >
+  </div>
+</div>
+
+<div class="posts-container">
+  <div class="mb-3">
+    <div
+      class="d-flex gap-3 align-items-center overflow-auto"
+      style="padding: 8px 4px"
+    >
+      {% for suser in story_users %}
+      <a
+        href="{{ url_for('stories', username=suser.username) }}"
+        class="text-center"
+        style="text-decoration: none"
+      >
+        <img
+          src="{{ suser.profilePicture }}"
+          class="avatar"
+          style="
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 2px solid #ffcc00;
+          "
+        />
+        <div class="small text-muted">{{ suser.username }}</div>
+      </a>
+      {% else %}
+      <div class="text-muted">No active stories</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div id="postList">
+    {% if posts|length == 0 %}
+    <p class="text-muted">No posts yet. Try creating one!</p>
+    {% endif %} {% for post in posts %}
+    <div class="post" data-post-id="{{ post.postId }}">
+      <div class="post-header">
+        <img src="{{ post.profilePicture }}" alt="avatar" class="avatar" />
+        <div>
+          <a href="{{ url_for('profile', username=post.username) }}"
+            ><div class="username">{{ post.username }}</div></a
+          >
+          <div class="time small text-muted">
+            {% if post.created_at %}{{ post.created_at }}{% endif %}
+          </div>
+        </div>
+      </div>
+      {% if post.image_url %}
+      <img src="{{ post.image_url }}" class="post-image" alt="post image" />
+      {% endif %} {% if post.content %}
+      <div class="caption">{{ post.content }}</div>
+      {% endif %}
+
+      <div class="post-actions">
+        <button
+          class="like-btn {% if post.user_liked %}active{% endif %}"
+          data-post-id="{{ post.postId }}"
+        >
+          {% if post.user_liked %}❤️{% else %}♡{% endif %}
+        </button>
+        <a
+          class="btn btn-outline-secondary btn-sm"
+          href="{{ url_for('view_post', postId=post.postId) }}"
+          >💬</a
+        >
+        {% if user and post.userId == user.userId %}
+        <form
+          method="post"
+          action="{{ url_for('delete_post', postId=post.postId) }}"
+          onsubmit="return confirm('Delete this post?');"
+          style="display: inline-block; margin-left: 8px"
+        >
+          <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+        </form>
+        {% endif %}
+      </div>
+
+      <div class="like-count" data-count="{{ post.like_count|default(0) }}">
+        {{ post.like_count|default(0) }} {{ 'like' if post.like_count == 1 else
+        'likes' }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

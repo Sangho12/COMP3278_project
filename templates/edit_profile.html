@@ -1,0 +1,24 @@
+{% extends 'base.html' %} {% block title %}Edit profile - HkuGram{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h2>Edit profile</h2>
+    <form method="post" action="{{ url_for('edit_profile') }}">
+      <div class="mb-3">
+        <label class="form-label">Profile picture URL</label>
+        <input
+          class="form-control"
+          name="profile_picture"
+          value="{{ user.profilePicture }}"
+        />
+      </div>
+      <button class="btn btn-primary" type="submit">Save</button>
+      <a
+        class="btn btn-link"
+        href="{{ url_for('profile', username=user.username) }}"
+        >Cancel</a
+      >
+    </form>
+  </div>
+</div>
+{% endblock %}
