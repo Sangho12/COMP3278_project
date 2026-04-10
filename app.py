@@ -29,7 +29,7 @@ def close_db(_):
 def init_db():
   with app.app_context():
     db = get_db()
-    with open('schema.sql', 'r') as f:
+    with open('HkuGram.sql', 'r') as f:
       db.executescript(f.read())
     db.commit()
 
@@ -119,15 +119,14 @@ def feed():
   db   = get_db()
   order = "p.created_at DESC" if sort == 'new' else "like_count DESC"
 
-  posts = db.execute(f"""
-    SELECT p.postId, p.content, p.image_url, p.created_at, u.username, u.userId,
-      COUNT(DISTINCT l.like_id) AS like_count, 
-      COUNT(DISTINCT c.comment_id) AS comment_count,
+  posts = db.execute(f"""SELECT p.postId, p.content, p.image_url, p.created_at, u.username, u.userId,
+      COUNT(DISTINCT l.userId) AS like_count, 
+      COUNT(DISTINCT c.commentId) AS comment_count,
       MAX(CASE WHEN l2.userId = ? THEN 1 ELSE 0 END) AS user_liked
-    FROM   Post p
-    JOIN   users u  ON u.userId  = p.userId
-    LEFT JOIN likes    l  ON l.postId  = p.postId
-    LEFT JOIN comments c  ON c.postId  = p.postId
+    FROM posts p
+    JOIN users u ON u.userId = p.userId
+    LEFT JOIN likes l ON l.postId = p.postId
+    LEFT JOIN comments c ON c.postId = p.postId
     LEFT JOIN likes    l2 ON l2.postId = p.postId AND l2.userId = ?
     GROUP  BY p.postId
     ORDER  BY {order}
