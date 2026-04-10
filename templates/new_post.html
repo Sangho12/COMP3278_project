@@ -1,0 +1,24 @@
+{% extends 'base.html' %} {% block title %}New Post - HkuGram{% endblock %} {%
+block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <h2>Create a new post</h2>
+    <form method="post" action="{{ url_for('new_post') }}">
+      <div class="mb-3">
+        <label class="form-label">Content</label>
+        <textarea class="form-control" name="content" rows="4"></textarea>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Image URL</label>
+        <input class="form-control" name="image_url" />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Feeling (emoji)</label>
+        <input class="form-control" name="feeling_emoji" maxlength="4" />
+      </div>
+      <button class="btn btn-primary" type="submit">Post</button>
+      <a class="btn btn-link" href="{{ url_for('feed') }}">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

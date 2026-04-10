@@ -1,0 +1,16 @@
+{% extends 'base.html' %} {% block title %}New Story - HkuGram{% endblock %} {%
+block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h2>Post a Story</h2>
+    <form method="post" action="{{ url_for('new_story') }}">
+      <div class="mb-3">
+        <label class="form-label">Image / Video URL</label>
+        <input class="form-control" name="image_url" required />
+      </div>
+      <button class="btn btn-primary" type="submit">Post Story</button>
+      <a class="btn btn-link" href="{{ url_for('feed') }}">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

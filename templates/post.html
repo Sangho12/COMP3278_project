@@ -1,0 +1,118 @@
+{% extends 'base.html' %} {% block title %}Post - HkuGram{% endblock %} {% block
+content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-2">
+          <img
+            src="{{ post.profilePicture }}"
+            alt="avatar"
+            class="avatar me-2"
+          />
+          <div>
+            <a href="{{ url_for('profile', username=post.username) }}"
+              ><strong>{{ post.username }}</strong></a
+            >
+            <div class="text-muted small">
+              Posted {% if post.created_at %}{{ post.created_at }}{% endif %}
+            </div>
+          </div>
+        </div>
+        {% if post.content %}
+        <p>{{ post.content }}</p>
+        {% endif %} {% if post.image_url %}<img
+          src="{{ post.image_url }}"
+          class="post-img mb-2"
+        />{% endif %} {% if post.feeling_emoji %}
+        <div class="mb-2">Feeling: {{ post.feeling_emoji }}</div>
+        {% endif %}
+
+        <div class="d-flex gap-2">
+          <form
+            method="post"
+            action="{{ url_for('toggle_like', postId=post.postId) }}"
+          >
+            <button
+              class="btn btn-sm btn-{{ 'primary' if post.user_liked else 'outline-primary' }}"
+              type="submit"
+            >
+              {{ 'Unlike' if post.user_liked else 'Like' }} ({{ post.like_count
+              }})
+            </button>
+          </form>
+          <a
+            class="btn btn-sm btn-outline-secondary"
+            href="{{ url_for('feed') }}"
+            >Back to feed</a
+          >
+        </div>
+      </div>
+    </div>
+
+    <h5>Comments</h5>
+
+    {% macro render_comment(c, level=0) %}
+    <div class="card mb-2" style="margin-left: {{ level * 1.25 }}rem;">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-1">
+          <img src="{{ c.profilePicture }}" class="avatar me-2" />
+          <strong>{{ c.username }}</strong>
+          <div class="text-muted small ms-2">
+            {% if c.created_at %}{{ c.created_at }}{% endif %}
+          </div>
+        </div>
+        <div>{{ c.content }}</div>
+        <div class="mt-2">
+          <form
+            method="post"
+            action="{{ url_for('add_comment', postId=post.postId) }}"
+          >
+            <input
+              type="hidden"
+              name="parentComment"
+              value="{{ c.commentId }}"
+            />
+            <div class="input-group">
+              <input
+                class="form-control form-control-sm"
+                name="content"
+                placeholder="Reply..."
+                required
+              />
+              <button class="btn btn-sm btn-outline-primary" type="submit">
+                Reply
+              </button>
+            </div>
+          </form>
+        </div>
+        {% for child in c.children %} {{ render_comment(child, level+1) }} {%
+        endfor %}
+      </div>
+    </div>
+    {% endmacro %}
+
+    <div class="mb-4">
+      <form
+        method="post"
+        action="{{ url_for('add_comment', postId=post.postId) }}"
+      >
+        <div class="mb-2">
+          <textarea
+            class="form-control"
+            name="content"
+            rows="2"
+            placeholder="Add a comment..."
+            required
+          ></textarea>
+        </div>
+        <button class="btn btn-primary" type="submit">Comment</button>
+      </form>
+    </div>
+
+    {% for c in comments %} {{ render_comment(c) }} {% else %}
+    <p class="text-muted">No comments yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

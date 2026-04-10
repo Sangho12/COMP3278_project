@@ -1,0 +1,80 @@
+{% extends 'base.html' %} {% block title %}{{ prof.username }} - Profile{%
+endblock %} {% block content %}
+<div class="row">
+  <div class="col-md-8 offset-md-2">
+    <div class="d-flex align-items-center mb-3">
+      <img
+        src="{{ prof.profilePicture }}"
+        class="avatar me-3"
+        style="width: 80px; height: 80px"
+      />
+      <div>
+        <h3>{{ prof.username }}</h3>
+        <div class="small text-muted">
+          <span>Followers: {{ follower_count }}</span> &middot;
+          <span>Following: {{ following_count }}</span>
+        </div>
+        <div class="small text-muted">
+          <span
+            ><a href="{{ url_for('followers', username=prof.username) }}"
+              >Followers: {{ follower_count }}</a
+            ></span
+          >
+          &middot;
+          <span
+            ><a href="{{ url_for('following', username=prof.username) }}"
+              >Following: {{ following_count }}</a
+            ></span
+          >
+        </div>
+        {% if stats %}
+        <div class="text-muted">
+          Posts: {{ stats.post_count }} &middot; Likes: {{ stats.like_count }}
+        </div>
+        {% endif %} {% if user and user.userId != prof.userId %}
+        <form
+          method="post"
+          action="{{ url_for('follow', username=prof.username) }}"
+          style="display: inline-block; margin-top: 6px"
+        >
+          {% if is_following %}
+          <button class="btn btn-sm btn-outline-secondary" type="submit">
+            Unfollow
+          </button>
+          {% else %}
+          <button class="btn btn-sm btn-primary" type="submit">Follow</button>
+          {% endif %}
+        </form>
+        {% endif %}
+      </div>
+
+      <h5>Posts</h5>
+      {% for post in posts %}
+      <div class="card mb-3">
+        <div class="card-body">
+          {% if post.content %}
+          <p>{{ post.content }}</p>
+          {% endif %} {% if post.image_url %}<img
+            src="{{ post.image_url }}"
+            class="post-img mb-2"
+          />{% endif %}
+          <div class="text-muted small">
+            Likes: {{ post.like_count }} &middot; Comments: {{
+            post.comment_count }}
+          </div>
+          <div class="mt-2">
+            <a
+              class="btn btn-sm btn-outline-secondary"
+              href="{{ url_for('view_post', postId=post.postId) }}"
+              >View</a
+            >
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-muted">No posts yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+  {% endblock %}
+</div>

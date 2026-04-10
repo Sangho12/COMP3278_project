@@ -32,6 +32,7 @@ def init_db():
     with open('HkuGram.sql', 'r') as f:
       db.executescript(f.read())
     db.commit()
+    # no-op: keep schema from HkuGram.sql; stories are stored with image_video_url and created_at
 
 #  Auth helpers 
 def login_required(f): 
@@ -149,7 +150,17 @@ def feed():
     GROUP  BY p.postId
     ORDER  BY {order}
     """, (session['userId'], session['userId'])).fetchall()
-  return render_template('feed.html', posts=posts, sort=sort, user=current_user())
+  # fetch users who have active stories in the last 24 hours
+  story_users = db.execute("""
+    SELECT u.userId, u.username, u.profilePicture, COUNT(s.storyId) AS story_count
+    FROM stories s
+    JOIN users u ON u.userId = s.userId
+    WHERE datetime(s.created_at) >= datetime('now', '-1 day')
+    GROUP BY u.userId
+    ORDER BY MAX(s.created_at) DESC
+  """).fetchall()
+
+  return render_template('feed.html', posts=posts, sort=sort, user=current_user(), story_users=story_users)
   
 # Posts
 @app.route('/post/new', methods=['GET','POST']) # new_post.html
@@ -168,6 +179,39 @@ def new_post():
     flash('Post published!', 'success')
     return redirect(url_for('feed'))
   return render_template('new_post.html', user=current_user())
+
+
+# Stories
+@app.route('/story/new', methods=['GET', 'POST'])
+@login_required
+def new_story():
+  db = get_db()
+  if request.method == 'POST':
+    image_url = request.form.get('image_url', '').strip() or None
+    if not image_url:
+      flash('Please provide an image or video URL for the story.', 'error')
+      return render_template('new_story.html', user=current_user())
+    db.execute("INSERT INTO stories (userId, image_video_url) VALUES (?,?)", (session['userId'], image_url))
+    db.commit()
+    flash('Story posted!', 'success')
+    return redirect(url_for('feed'))
+  return render_template('new_story.html', user=current_user())
+
+
+@app.route('/stories/<username>')
+@login_required
+def stories(username):
+  db = get_db()
+  prof = db.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+  if not prof:
+    flash('User not found.', 'error')
+    return redirect(url_for('feed'))
+  stories_rows = db.execute("SELECT s.*, u.username, u.profilePicture FROM stories s JOIN users u ON u.userId = s.userId WHERE s.userId = ? AND datetime(s.created_at) >= datetime('now','-1 day') ORDER BY s.created_at ASC", (prof['userId'],)).fetchall()
+  stories = [dict(r) for r in stories_rows]
+  if not stories:
+    flash('No active stories for this user.', 'error')
+    return redirect(url_for('profile', username=username))
+  return render_template('stories.html', prof=prof, stories=stories, user=current_user())
 
 def build_comment_tree(comments):
     by_id = {}
@@ -287,7 +331,15 @@ def profile(username):
   print(posts)
   stats = db.execute("SELECT * FROM v_user_activity WHERE userId=?",(prof['userId'],)).fetchone()
 
-  return render_template('profile.html', prof=prof, posts=posts, stats=stats, user=current_user())
+  # follower / following counts and whether the current user follows this profile
+  follower_count = db.execute("SELECT COUNT(*) FROM follows WHERE followingId=?", (prof['userId'],)).fetchone()[0]
+  following_count = db.execute("SELECT COUNT(*) FROM follows WHERE followerId=?", (prof['userId'],)).fetchone()[0]
+  is_following = False
+  cu = current_user()
+  if cu:
+    is_following = db.execute("SELECT 1 FROM follows WHERE followerId=? AND followingId=?", (cu['userId'], prof['userId'])).fetchone() is not None
+
+  return render_template('profile.html', prof=prof, posts=posts, stats=stats, user=current_user(), follower_count=follower_count, following_count=following_count, is_following=is_following)
 
 # Analytics
 @app.route('/analytics') # analytics.html
@@ -306,6 +358,66 @@ def analytics():
   total_likes = db.execute("SELECT COUNT(*) FROM likes").fetchone()[0]
   return render_template('analytics.html',top_posts=top_posts, top_users=top_users, total_posts=total_posts, 
                          total_users=total_users, total_likes=total_likes, user=current_user())
+
+
+@app.route('/follow/<username>', methods=['POST'])
+@login_required
+def follow(username):
+  db = get_db()
+  target = db.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+  if not target:
+    flash('User not found.', 'error')
+    return redirect(url_for('feed'))
+  if target['userId'] == session['userId']:
+    flash('You cannot follow yourself.', 'error')
+    return redirect(url_for('profile', username=username))
+  # toggle follow
+  existing = db.execute("SELECT * FROM follows WHERE followerId=? AND followingId=?", (session['userId'], target['userId'])).fetchone()
+  if existing:
+    db.execute("DELETE FROM follows WHERE followerId=? AND followingId=?", (session['userId'], target['userId']))
+    db.commit()
+    flash(f'Unfollowed {username}.', 'success')
+  else:
+    db.execute("INSERT INTO follows (followerId, followingId) VALUES (?,?)", (session['userId'], target['userId']))
+    db.commit()
+    flash(f'Now following {username}.', 'success')
+  return redirect(url_for('profile', username=username))
+
+
+@app.route('/search')
+@login_required
+def search():
+  q = request.args.get('q','').strip()
+  db = get_db()
+  results = []
+  if q:
+    like = f"%{q}%"
+    results = db.execute("SELECT userId, username, profilePicture FROM users WHERE username LIKE ? LIMIT 50", (like,)).fetchall()
+  return render_template('search.html', q=q, results=results, user=current_user())
+
+
+@app.route('/followers/<username>')
+@login_required
+def followers(username):
+  db = get_db()
+  prof = db.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+  if not prof:
+    flash('User not found.', 'error')
+    return redirect(url_for('feed'))
+  rows = db.execute("SELECT u.userId, u.username, u.profilePicture FROM follows f JOIN users u ON f.followerId = u.userId WHERE f.followingId = ?", (prof['userId'],)).fetchall()
+  return render_template('followers.html', prof=prof, users=rows, user=current_user(), title='Followers')
+
+
+@app.route('/following/<username>')
+@login_required
+def following(username):
+  db = get_db()
+  prof = db.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
+  if not prof:
+    flash('User not found.', 'error')
+    return redirect(url_for('feed'))
+  rows = db.execute("SELECT u.userId, u.username, u.profilePicture FROM follows f JOIN users u ON f.followingId = u.userId WHERE f.followerId = ?", (prof['userId'],)).fetchall()
+  return render_template('followers.html', prof=prof, users=rows, user=current_user(), title='Following')
   
 if __name__ == '__main__':
   if not os.path.exists(DATABASE):
