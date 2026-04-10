@@ -46,7 +46,7 @@ def current_user():
   if 'userId' not in session:
     return None
   db = get_db()
-  return db.execute("SELECT * FROM User WHERE userId=?", (session['userId'],)).fetchone()
+  return db.execute("SELECT * FROM users WHERE userId=?", (session['userId'],)).fetchone()
 
 # root
 @app.route('/')
@@ -65,7 +65,7 @@ def login():
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
     
     db = get_db()
-    user = db.execute("SELECT * FROM User WHERE username = ? AND password = ?", (username, hashed_password)).fetchone()
+    user = db.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, hashed_password)).fetchone()
     
     if user:
       session['userId'] = user['userId']
@@ -148,7 +148,7 @@ def new_post():
       flash('Share your thoughts!', 'error')
       return render_template('new_post.html', user=current_user()) #the new post html DEPEND on URL
     db = get_db()
-    db.execute("INSERT INTO Post (username, content, image_url) VALUES (?,?,?)", (session['username'], content, image_url)) 
+    db.execute("INSERT INTO Post (userId, content, image_url) VALUES (?,?,?)", (session['userrId'], content, image_url)) 
     db.commit()
     flash('Post published!', 'success')
     return redirect(url_for('feed'))# to feed url
@@ -185,7 +185,7 @@ def view_post(post_id):
   Childcomments = db.execute("""
     SELECT c.*, u.username
     FROM   comments c
-    JOIN   users u ON u.username = c.username
+    JOIN   users u ON u.userId = c.userId
     WHERE  c.post_id = ? AND c.parentComment IS NOT NULL
     ORDER  BY c.created_at ASC
     """, (post_id,)).fetchall() 
@@ -199,7 +199,7 @@ def view_post(post_id):
 def delete_post(postId):
   db = get_db()
   post = db.execute("SELECT username FROM Post WHERE postId=?",(postId,)).fetchone()
-  if post and post['username'] == session['username']:
+  if post and post['userId'] == session['userId']:
     db.execute("DELETE FROM Post WHERE postId=?", (postId,))
     db.commit()
     flash('Post deleted.', 'success')
@@ -211,16 +211,16 @@ def delete_post(postId):
 def toggle_like(postId):
 # def toggle_like(postId, emoji):
   db  = get_db()
-  username = session['username']
+  uid = session['userId']
   existing = db.execute(
-    "SELECT like_id FROM likes WHERE postId=? AND username=?",(postId, username)
+    "SELECT like_id FROM likes WHERE postId=? AND userId=?",(postId, userId)
     # "SELECT like_id FROM likes WHERE postId=? AND username=? AND emoji=?",(postId, username, emoji)
   ).fetchone()
   if existing:
-    db.execute("DELETE FROM likes WHERE postId=? AND username=?",(postId, username))
+    db.execute("DELETE FROM likes WHERE postId=? AND userId=?",(postId, userId))
     liked = False
   else:
-    db.execute("INSERT INTO likes (postId, username) VALUES (?,?)", (postId, username))
+    db.execute("INSERT INTO likes (postId, userId) VALUES (?,?)", (postId, userId))
     # db.execute("INSERT INTO likes (postId, username) VALUES (?,?,?)",(postId, username, emoji))
     liked = True
   db.commit()
@@ -236,8 +236,8 @@ def add_comment(post_id, parentComment):
     content = request.form.get('content', '').strip()
     if content:
         db = get_db()
-        db.execute("INSERT INTO comments (postId, username, content, parent_comment_id) VALUES (?,?,?,?)",
-                   (post_id, session['username'], content, parentComment)) # HTML send back the button clicked with its parentid
+        db.execute("INSERT INTO comments (postId, userId, content, parent_comment_id) VALUES (?,?,?,?)",
+                   (post_id, session['userId'], content, parentComment)) # HTML send back the button clicked with its parentid
         db.commit()
     return redirect(url_for('view_post', post_id=post_id))
 
