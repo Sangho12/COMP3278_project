@@ -93,7 +93,7 @@ def register():
     db = get_db()
     
     try:
-      db.execute("INSERT INTO User (username, password) VALUES (?, ?)", (username, hashed_password))
+      db.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_password))
       db.commit()
       flash("Registration successful! Please go to log in.")
       return redirect(url_for('login'))
@@ -105,6 +105,8 @@ def register():
 # user authentication - logout
 @app.route('/logout')
 def logout():
+
+  session.pop('userId', None)
   session.pop('username', None)
   flash("You have been logged out.")
   return redirect(url_for('login'))
