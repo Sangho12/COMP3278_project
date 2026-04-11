@@ -12,8 +12,8 @@ content %}
           />
           <div>
             <a href="{{ url_for('profile', username=post.username) }}"
-              ><strong>{{ post.username }}</strong></a
-            >
+              ><strong>{{ post.username }}</strong></a>
+              {% if post.feeling_emoji %}{{ post.feeling_emoji }}{% endif %}
             <div class="text-muted small">
               Posted {% if post.created_at %}{{ post.created_at }}{% endif %}
             </div>
