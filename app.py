@@ -67,7 +67,7 @@ def login():
     
     db = get_db()
     user = db.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, hashed_password)).fetchone()
-    
+
     if user:
       session['userId'] = user['userId']
       session['username'] = user['username']
@@ -79,13 +79,12 @@ def login():
       
 
 # user authentication - register
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
   if request.method == 'POST':
     username = request.form.get('username')
     password = request.form.get('password')
-    profile_pic = request.form.get('profile_picture') or 'https://example.com/default-avatar.png'
+    
     if not username or not password:
       flash("Incorrect username or password.")
       return redirect(url_for('register'))
@@ -94,10 +93,7 @@ def register():
     db = get_db()
     
     try:
-      db.execute(
-        "INSERT INTO users (username, password, profilePicture) VALUES (?, ?, ?)", 
-        (username, hashed_password, profile_pic)
-      )
+      db.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_password))
       db.commit()
       flash("Registration successful! Please go to log in.")
       return redirect(url_for('login'))
@@ -105,7 +101,6 @@ def register():
     except sqlite3.IntegrityError:
       flash("Username already exists! Try another one.")
   return render_template('register.html')
-  
 # user authentication - logout
 @app.route('/logout')
 def logout():
@@ -115,20 +110,6 @@ def logout():
   flash("You have been logged out.")
   return redirect(url_for('login'))
 
-# Edit Profile Route
-
-@app.route('/profile/edit', methods=['GET', 'POST'])
-@login_required
-def edit_profile():
-  db = get_db()
-  if request.method == 'POST':
-    new_pic = request.form.get('profile_picture')
-    db.execute("UPDATE users SET profilePicture = ? WHERE userId = ?", (new_pic, session['userId']))
-    db.commit()
-    flash("Profile updated!")
-    return redirect(url_for('profile', username=session['username']))
-  user = db.execute("SELECT * FROM users WHERE userId = ?", (session['userId'],)).fetchone()
-  return render_template('edit_profile.html', user=user)
 
 
 # Feed
@@ -340,7 +321,40 @@ def profile(username):
     is_following = db.execute("SELECT 1 FROM follows WHERE followerId=? AND followingId=?", (cu['userId'], prof['userId'])).fetchone() is not None
 
   return render_template('profile.html', prof=prof, posts=posts, stats=stats, user=current_user(), follower_count=follower_count, following_count=following_count, is_following=is_following)
+#edit_profile
+@app.route('/edit_profile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    db = get_db()
+    user_id = session['userId']
 
+    if request.method == 'POST':
+        new_username = request.form.get('username')
+        new_profile_pic = request.form.get('profile_picture')
+        new_password = request.form.get('password')
+
+        try:
+            db.execute("""
+                UPDATE users 
+                SET username = ?, profilePicture = ?
+                WHERE userId = ?
+            """, (new_username, new_profile_pic, user_id))
+            
+            if new_password and new_password.strip():
+                hashed_pw = hashlib.sha256(new_password.encode()).hexdigest()
+                db.execute("UPDATE users SET password = ? WHERE userId = ?", (hashed_pw, user_id))
+            
+            db.commit()
+            session['username'] = new_username
+            flash("Profile updated successfully!", "success")
+            return redirect(url_for('profile', username=new_username))
+
+        except sqlite3.IntegrityError:
+            flash("Username already taken.", "error")
+            return redirect(url_for('edit_profile'))
+
+    user = db.execute("SELECT * FROM users WHERE userId = ?", (user_id,)).fetchone()
+    return render_template('edit_profile.html', user=user)
 # Analytics
 @app.route('/analytics') # analytics.html
 @login_required
