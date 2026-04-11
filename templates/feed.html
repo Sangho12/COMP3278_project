@@ -55,10 +55,8 @@ content %}
         <img src="{{ post.profilePicture }}" alt="avatar" class="avatar" />
         <div>
           <a href="{{ url_for('profile', username=post.username) }}"
-            ><div class="username">{{ post.username }}</div></a
-          > {% if post.feeling_emoji %}
-          <div class="caption">{{ post.feeling_emoji }}</div>
-          {% endif %}
+            ><div class="username">{{ post.username }} {% if post.feeling_emoji %}{{ post.feeling_emoji }}{% endif %}</div></a
+          > 
           <div class="time small text-muted">
             {% if post.created_at %}{{ post.created_at }}{% endif %}
           </div>
