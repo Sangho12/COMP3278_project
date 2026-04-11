@@ -12,6 +12,23 @@
           value="{{ user.profilePicture }}"
         />
       </div>
+      <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input
+          class="form-control"
+          name="username"
+          value="{{ user.username }}"
+        />
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input
+          class="form-control"
+          name="password"
+          value="{{ user.password }}"
+        />
+      </div>
+
       <button class="btn btn-primary" type="submit">Save</button>
       <a
         class="btn btn-link"
