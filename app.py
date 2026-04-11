@@ -84,6 +84,7 @@ def register():
   if request.method == 'POST':
     username = request.form.get('username')
     password = request.form.get('password')
+    profile_pic=request.form.get('profile_picture')
     
     if not username or not password:
       flash("Incorrect username or password.")
@@ -91,9 +92,10 @@ def register():
       
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
     db = get_db()
-    
+    if(profile_pic==''):
+      profile_pic='https://img.icons8.com/?size=100&id=fUUEbUbXhzOA&format=png&color=000000'
     try:
-      db.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_password))
+      db.execute("INSERT INTO users (username, password,profilePicture) VALUES (?, ?,?)", (username, hashed_password,profile_pic))
       db.commit()
       flash("Registration successful! Please go to log in.")
       return redirect(url_for('login'))
@@ -148,19 +150,38 @@ def feed():
 @login_required 
 def new_post():
   if request.method == 'POST':
-    content = request.form['content'].strip() or None
+    content = request.form.get('content', '').strip() or None
     image_url = request.form.get('image_url', '').strip() or None
     feeling_emoji = request.form.get('feeling_emoji', '').strip() or None
-    if content is None and image_url is None: # similar to facebook (can be thoughts, pic, or both in a post)
+    
+    if content is None and image_url is None:
       flash('Share your thoughts!', 'error')
       return render_template('new_post.html', user=current_user())
+    
     db = get_db()
-    db.execute("INSERT INTO posts (userId, content, image_url, feeling_emoji) VALUES (?,?,?,?)", (session['userId'], content, image_url, feeling_emoji)) 
+    cursor = db.cursor()
+    
+    # Insert the post
+    cursor.execute("INSERT INTO posts (userId, content, image_url, feeling_emoji) VALUES (?,?,?,?)", 
+                   (session['userId'], content, image_url, feeling_emoji))
+    new_post_id = cursor.lastrowid
+    
+    # Get followers and create notifications
+    cursor.execute("SELECT followerId FROM follows WHERE followingId = ?", (session['userId'],))
+    followers = cursor.fetchall()
+    
+    poster_name = session.get('username', 'Someone')
+    for follower in followers:
+      cursor.execute("INSERT INTO Notifications (userId, content, is_read,postId) VALUES (?, ?, ?,?)", 
+                     (follower['followerId'], f'New post published from {poster_name}', False,new_post_id))
+    
     db.commit()
+    cursor.close()
+    
     flash('Post published!', 'success')
     return redirect(url_for('feed'))
+  
   return render_template('new_post.html', user=current_user())
-
 
 # Stories
 @app.route('/story/new', methods=['GET', 'POST'])
@@ -420,7 +441,36 @@ def followers(username):
     return redirect(url_for('feed'))
   rows = db.execute("SELECT u.userId, u.username, u.profilePicture FROM follows f JOIN users u ON f.followerId = u.userId WHERE f.followingId = ?", (prof['userId'],)).fetchall()
   return render_template('followers.html', prof=prof, users=rows, user=current_user(), title='Followers')
-
+@app.route('/notifications')
+@login_required
+def notifications():
+    db = get_db()
+    notifs = db.execute("""
+        SELECT * FROM Notifications 
+        WHERE userId = ? 
+        ORDER BY created_at DESC 
+        LIMIT 50
+    """, (session['userId'],)).fetchall()
+    return jsonify([dict(n) for n in notifs])
+@app.route('/notifications/<int:notifId>/read', methods=['POST'])
+@login_required
+def mark_notification_read(notifId):
+    db = get_db()
+    notif = db.execute(
+        "SELECT * FROM Notifications WHERE notificationId = ? AND userId = ?",
+        (notifId, session['userId'])
+    ).fetchone()
+    if not notif:
+        return jsonify({'error': 'Not found'}), 404
+    db.execute(
+        "UPDATE Notifications SET is_read = 1 WHERE notificationId = ?",
+        (notifId,)
+    )
+    db.commit()
+    # Extract postId from notification content if present
+    # Notifications are created as "New post published from <username>"
+    # We need to find the most recent post from that user to redirect
+    return jsonify({'ok': True})
 
 @app.route('/following/<username>')
 @login_required

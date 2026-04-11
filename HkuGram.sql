@@ -31,8 +31,10 @@ CREATE TABLE IF NOT EXISTS notifications (
   userId INTEGER NOT NULL,
   content TEXT NOT NULL,
   is_read INTEGER DEFAULT 0,
+  postId INTEGER NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (userId) REFERENCES users (userId)
+  FOREIGN KEY (userId) REFERENCES users (userId),
+  FOREIGN KEY (postId) REFERENCES posts (postId)
 );
 
 CREATE TABLE IF NOT EXISTS posts (

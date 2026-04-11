@@ -3,20 +3,60 @@ content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2>Feed</h2>
   <div class="d-flex gap-2 align-items-center">
+
+    <!-- 🔔 Notification Bell -->
+    <div class="position-relative">
+      <button
+        class="btn btn-outline-secondary position-relative"
+        id="notifBell"
+        title="Notifications"
+        aria-label="Notifications"
+      >
+        🔔
+        <span
+          id="notifBadge"
+          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+          style="display: none; font-size: 0.65rem"
+        ></span>
+      </button>
+
+      <!-- Dropdown panel -->
+      <div
+        id="notifDropdown"
+        class="card shadow"
+        style="
+          display: none;
+          position: absolute;
+          right: 0;
+          top: calc(100% + 6px);
+          width: 320px;
+          max-height: 400px;
+          overflow-y: auto;
+          z-index: 1050;
+        "
+      >
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+          <strong>Notifications</strong>
+          <button id="markAllRead" class="btn btn-link btn-sm p-0 text-muted">
+            Mark all read
+          </button>
+        </div>
+        <ul id="notifList" class="list-group list-group-flush mb-0">
+          <li class="list-group-item text-muted text-center small py-3">
+            Loading…
+          </li>
+        </ul>
+      </div>
+    </div>
+    <!-- end bell -->
+
     <a class="btn btn-primary" href="{{ url_for('new_story') }}">Add Story</a>
-    <a
-      class="btn btn-outline-secondary"
-      href="{{ url_for('feed', sort='new') }}"
-      >Newest</a
-    >
-    <a
-      class="btn btn-outline-secondary"
-      href="{{ url_for('feed', sort='top') }}"
-      >Top</a
-    >
+    <a class="btn btn-outline-secondary" href="{{ url_for('feed', sort='new') }}">Newest</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('feed', sort='top') }}">Top</a>
   </div>
 </div>
 
+<!-- ── Stories row ── -->
 <div class="posts-container">
   <div class="mb-3">
     <div
@@ -24,20 +64,16 @@ content %}
       style="padding: 8px 4px"
     >
       {% for suser in story_users %}
-      <a
-        href="{{ url_for('stories', username=suser.username) }}"
+      
+        <a href="{{ url_for('stories', username=suser.username) }}"
         class="text-center"
         style="text-decoration: none"
       >
+      </a>
         <img
           src="{{ suser.profilePicture }}"
           class="avatar"
-          style="
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            border: 2px solid #ffcc00;
-          "
+          style="width:56px;height:56px;border-radius:50%;border:2px solid #ffcc00;"
         />
         <div class="small text-muted">{{ suser.username }}</div>
       </a>
@@ -46,16 +82,20 @@ content %}
       {% endfor %}
     </div>
   </div>
+
+  <!-- ── Posts ── -->
   <div id="postList">
     {% if posts|length == 0 %}
     <p class="text-muted">No posts yet. Try creating one!</p>
-    {% endif %} {% for post in posts %}
+    {% endif %}
+    {% for post in posts %}
     <div class="post" data-post-id="{{ post.postId }}">
       <div class="post-header">
         <img src="{{ post.profilePicture }}" alt="avatar" class="avatar" />
         <div>
-          <a href="{{ url_for('profile', username=post.username) }}"
-            ><div class="username">{{ post.username }}</div></a> 
+          <a href="{{ url_for('profile', username=post.username) }}">
+            <div class="username">{{ post.username }}</div>
+          </a>
           {% if post.feeling_emoji %}{{ post.feeling_emoji }}{% endif %}
           <div class="time small text-muted">
             {% if post.created_at %}{{ post.created_at }}{% endif %}
@@ -64,7 +104,8 @@ content %}
       </div>
       {% if post.image_url %}
       <img src="{{ post.image_url }}" class="post-image" alt="post image" />
-      {% endif %} {% if post.content %}
+      {% endif %}
+      {% if post.content %}
       <div class="caption">{{ post.content }}</div>
       {% endif %}
 
@@ -75,8 +116,8 @@ content %}
         >
           {% if post.user_liked %}❤️{% else %}♡{% endif %}
         </button>
-        <a
-          class="btn btn-outline-secondary btn-sm"
+        
+         <a class="btn btn-outline-secondary btn-sm"
           href="{{ url_for('view_post', postId=post.postId) }}"
           >💬</a
         >
@@ -85,7 +126,7 @@ content %}
           method="post"
           action="{{ url_for('delete_post', postId=post.postId) }}"
           onsubmit="return confirm('Delete this post?');"
-          style="display: inline-block; margin-left: 8px"
+          style="display:inline-block;margin-left:8px"
         >
           <button class="btn btn-sm btn-danger" type="submit">Delete</button>
         </form>
@@ -93,12 +134,129 @@ content %}
       </div>
 
       <div class="like-count" data-count="{{ post.like_count|default(0) }}">
-        {{ post.like_count|default(0) }} {{ 'like' if post.like_count == 1 else
-        'likes' }}
+        {{ post.like_count|default(0) }}
+        {{ 'like' if post.like_count == 1 else 'likes' }}
       </div>
     </div>
     {% endfor %}
   </div>
 </div>
+
+<!-- ── Notification JS ── -->
+<script>
+  const bell        = document.getElementById('notifBell');
+  const badge       = document.getElementById('notifBadge');
+  const dropdown    = document.getElementById('notifDropdown');
+  const notifList   = document.getElementById('notifList');
+  const markAllBtn  = document.getElementById('markAllRead');
+
+  let notifData = [];   // cache fetched notifications
+
+  // ── Toggle dropdown open/close ──────────────────────────────
+  bell.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = dropdown.style.display === 'block';
+    if (isOpen) {
+      dropdown.style.display = 'none';
+    } else {
+      dropdown.style.display = 'block';
+      loadNotifications();
+    }
+  });
+
+  // Close when clicking outside
+  document.addEventListener('click', () => {
+    dropdown.style.display = 'none';
+  });
+  dropdown.addEventListener('click', (e) => e.stopPropagation());
+
+  // ── Fetch & render notifications ────────────────────────────
+  function loadNotifications() {
+    fetch('/notifications')
+      .then(r => r.json())
+      .then(data => {
+        notifData = data;
+        renderNotifications(data);
+        updateBadge(data);
+      })
+      .catch(() => {
+        notifList.innerHTML =
+          '<li class="list-group-item text-danger text-center small">Failed to load.</li>';
+      });
+  }
+
+  function renderNotifications(data) {
+    if (!data.length) {
+      notifList.innerHTML =
+        '<li class="list-group-item text-muted text-center small py-3">No notifications yet.</li>';
+      return;
+    }
+    console.log(notifList)
+    notifList.innerHTML = data.map(n => {
+      // Strip the internal |postId:XX suffix for display
+      const displayText = n.content.split('|postId:')[0];
+      const unreadStyle = n.is_read
+        ? ''
+        : 'background:#f0f7ff;font-weight:500;';
+      const dot = n.is_read
+        ? ''
+        : '<span class="text-primary me-2" style="font-size:0.5rem;vertical-align:middle">●</span>';
+
+      return `
+        <li class="list-group-item list-group-item-action py-2 px-3"
+            style="cursor:pointer;${unreadStyle}"
+            data-notif-id="${n.notificationId}" data-post-id="${n.postId}">
+          ${dot}
+          <span class="small">${escapeHtml(displayText)}</span>
+          <div class="text-muted" style="font-size:0.7rem">${n.created_at || ''}</div>
+        </li>`;
+    }).join('');
+
+    // Click each notification → mark read + redirect
+    notifList.querySelectorAll('li[data-post-id]').forEach(li => {
+      li.addEventListener('click', () => {
+        const id = li.dataset.notifId;
+        console.log(id);
+        const postId=li.dataset.postId
+        window.location.href = `/post/${postId}`;
+      });
+    });
+  }
+
+  function updateBadge(data) {
+    const unread = data.filter(n => !n.is_read).length;
+    if (unread > 0) {
+      badge.textContent = unread > 99 ? '99+' : unread;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // ── Mark all read ────────────────────────────────────────────
+  markAllBtn.addEventListener('click', async () => {
+    const unread = notifData.filter(n => !n.is_read);
+    await Promise.all(
+      unread.map(n =>
+        fetch(`/notifications/${n.notificationId}/read`, { method: 'POST' })
+      )
+    );
+    loadNotifications();   // refresh UI
+  });
+
+  // ── Poll for unread count every 30 s ────────────────────────
+  function pollBadge() {
+    fetch('/notifications')
+      .then(r => r.json())
+      .then(data => updateBadge(data));
+  }
+  pollBadge();
+  setInterval(pollBadge, 30_000);
+
+  // ── XSS safety ──────────────────────────────────────────────
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
 
 {% endblock %}
