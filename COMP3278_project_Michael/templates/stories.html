@@ -1,0 +1,120 @@
+{% extends 'base.html' %} 
+{% block title %}Stories - {{ prof.username }}{% endblock %} 
+{% block content %}
+<div class="stories-view-container" style="max-width: 600px; margin: 0 auto; padding: 20px 0;">
+  <!-- Story Content Card (matches feed card style) -->
+  <div class="story-card" style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 20px;">
+    <div class="story-card-body" style="padding: 16px; text-align: center;">
+      <!-- Story Image/Video -->
+      <img
+        id="storyImage"
+        src="{{ stories[0].image_video_url if stories else '' }}"
+        style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px;"
+      />
+      
+      <!-- Story Meta (Username + Expiration Timer) -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+        <div style="font-weight: 600; color: var(--text);">{{ prof.username }}</div>
+        <div id="storyTimer" style="font-size: 14px; color: var(--text-muted);">24:00</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Buttons (matches feed style) -->
+  <div style="display: flex; gap: 12px; justify-content: center;">
+    <button class="story-nav-btn" id="prevBtn" style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; color: var(--text); cursor: pointer;">Prev</button>
+    <button class="story-nav-btn" id="nextBtn" style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; color: var(--text); cursor: pointer;">Next</button>
+    <a href="{{ url_for('feed') }}" style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; color: var(--text); text-decoration: none;">Back to feed</a>
+  </div>
+</div>
+
+<script>
+  const stories = {{ stories|tojson }};
+  let idx = 0;
+  let timerInterval = null;
+
+  // Check if all stories are expired (initialize)
+  function checkAllExpired() {
+    const now = new Date();
+    return stories.every(story => {
+      const then = new Date(story.created_at.replace(' ', 'T'));
+      const expire = new Date(then.getTime() + 24*60*60*1000);
+      return expire <= now;
+    });
+  }
+
+  // Redirect to feed if all stories are expired
+  if (checkAllExpired() || stories.length === 0) {
+    alert('This story has expired (24 hours passed)');
+    window.location = '{{ url_for("feed") }}';
+  }
+
+  function showStory(i) {
+    idx = i;
+    const s = stories[idx];
+    const img = document.getElementById('storyImage');
+    
+    // Check if current story is expired
+    const then = new Date(s.created_at.replace(' ', 'T'));
+    const expire = new Date(then.getTime() + 24*60*60*1000);
+    const now = new Date();
+    
+    if (expire <= now) {
+      alert('This story has expired!');
+      window.location = '{{ url_for("feed") }}';
+      return;
+    }
+
+    // Update story image
+    img.src = s.image_video_url;
+    startTimer(s.created_at);
+  }
+
+  function startTimer(created_at) {
+    clearInterval(timerInterval);
+    // Timezone-aware expiration calculation (UTC)
+    const then = new Date(created_at.replace(' ', 'T') + 'Z'); // Add UTC marker
+    const expire = new Date(then.getTime() + 24*60*60*1000);
+
+    function updateTimer() {
+      const now = new Date();
+      let diff = Math.max(0, Math.floor((expire - now)/1000));
+      
+      if (diff <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('storyTimer').innerText = 'Expired';
+        setTimeout(() => {
+          window.location = '{{ url_for("feed") }}';
+        }, 2000);
+        return;
+      }
+
+      // Format time (HH:MM:SS)
+      const h = Math.floor(diff/3600);
+      diff %= 3600;
+      const m = Math.floor(diff/60);
+      const s = diff%60;
+      document.getElementById('storyTimer').innerText = `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    updateTimer();
+    timerInterval = setInterval(updateTimer, 1000);
+  }
+
+  // Navigation button handlers
+  document.getElementById('prevBtn').addEventListener('click', () => {
+    if (idx > 0) showStory(idx - 1);
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    if (idx < stories.length - 1) {
+      showStory(idx + 1);
+    } else {
+      window.location = '{{ url_for("feed") }}';
+    }
+  });
+
+  // Initialize first story
+  showStory(0);
+</script>
+{% endblock %}
