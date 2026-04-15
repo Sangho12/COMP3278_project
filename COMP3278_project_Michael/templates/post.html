@@ -1,0 +1,378 @@
+{% extends 'base.html' %}
+{% block title %}Post | HKUgram{% endblock %}
+
+{% block content %}
+<div class="post-detail-container">
+    <a href="{{ url_for('feed') }}" class="close-btn">✕</a>
+
+    <!-- Left Post Section -->
+    <div class="post-left">
+        <div class="post" style="margin: 0; border: none; box-shadow: none; width: 100%;">
+            <!-- 1. Top: Avatar + Username -->
+            <div class="post-header">
+                {% if post.profilePicture %}
+                    <img src="{{ post.profilePicture }}" class="avatar" alt="avatar">
+                {% else %}
+                    <div class="avatar">{{ post.username[0]|upper }}</div>
+                {% endif %}
+                <a href="{{ url_for('profile', username=post.username) }}" class="post-username">{{ post.username }}</a>
+            </div>
+
+            <!-- 2. Post Image -->
+            {% if post.image_url %}
+            <img src="{{ post.image_url }}" class="post-image" alt="post image">
+            {% endif %}
+
+            <!-- 3. 🔥 FIXED: Like Button + Count (Dynamic Update) -->
+            <div class="post-actions">
+                <button 
+                    class="action-btn like-btn" 
+                    data-post-id="{{ post.postId }}"
+                    data-liked="{{ post.user_liked }}"
+                >
+                    {% if post.user_liked %}❤️{% else %}♡{% endif %}
+                </button>
+                <span class="like-count" id="post-like-count-{{ post.postId }}">{{ post.like_count|default(0) }} Likes</span>
+            </div>
+
+            <!-- 4. Caption (With Username) -->
+            <p class="post-caption"><strong>{{ post.username }}</strong> {{ post.content }}</p>
+        </div>
+    </div>
+
+    <!-- Right Comment Section -->
+    <div class="post-right">
+        <div class="comments-list" id="commentsListContainer">
+            <!-- Recursive Macro for Chronological Comments -->
+            {% macro render_comment_tree(comments) %}
+                {% for comment in comments %}
+                <div class="comment-item" data-comment-id="{{ comment.commentId }}">
+                    <div class="comment-header">
+                        {% if comment.profilePicture %}
+                            <img src="{{ comment.profilePicture }}" class="comment-avatar" alt="avatar">
+                        {% else %}
+                            <div class="comment-avatar">{{ comment.username[0]|upper }}</div>
+                        {% endif %}
+                        <a href="{{ url_for('profile', username=comment.username) }}" class="comment-username">{{ comment.username }}</a>
+                    </div>
+                    <p class="comment-text">{{ comment.content }}</p>
+                    <div class="comment-meta">
+                        <span class="comment-time">{{ comment.created_at }}</span>
+                        <button class="reply-btn" data-username="{{ comment.username }}" data-parent-id="{{ comment.commentId }}">Reply</button>
+                    </div>
+
+                    <!-- Nested Replies -->
+                    {% if comment.children %}
+                    <div class="child-comments">
+                        {{ render_comment_tree(comment.children) }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Reply Form -->
+                    <form class="reply-form comment-form" method="POST" action="{{ url_for('add_comment', postId=post.postId) }}" style="display: none;">
+                        <input type="text" name="content" class="comment-input reply-input" required placeholder="Reply to @{{ comment.username }}...">
+                        <input type="hidden" name="parentComment" value="{{ comment.commentId }}">
+                        <button type="submit" class="comment-submit">Post</button>
+                        <button type="button" class="cancel-reply-btn">Cancel</button>
+                    </form>
+                </div>
+                {% endfor %}
+            {% endmacro %}
+
+            <!-- Render All Comments -->
+            {% if comments %}
+                {{ render_comment_tree(comments) }}
+            {% else %}
+                <p class="text-muted" style="text-align: center; margin-top: 50px;">No comments yet. Be the first to comment!</p>
+            {% endif %}
+        </div>
+
+        <!-- Main Root Comment Form -->
+        <div class="comment-form-container">
+            <form action="{{ url_for('add_comment', postId=post.postId) }}" method="POST" class="comment-form">
+                <input type="text" name="content" placeholder="Add a comment..." required class="comment-input">
+                <button type="submit" class="comment-submit">Post</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .post-detail-container {
+        display: flex;
+        width: 100%;
+        max-width: 1000px;
+        height: 85vh;
+        background: var(--card-bg);
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+        margin: 0 auto !important;
+        border: 1px solid var(--border);
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        font-size: 24px;
+        color: var(--text);
+        text-decoration: none;
+        z-index: 10;
+        cursor: pointer;
+    }
+
+    .post-left {
+        width: 50%;
+        padding: 30px;
+        border-right: 1px solid var(--border);
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        position: relative;
+        padding-top: 15px;
+        padding-bottom: 15px;
+        overflow: visible;
+    }
+
+    .post-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .post .avatar {
+        width: 50px !important;
+        height: 50px !important;
+        font-size: 18px !important;
+        border-radius: 50%;
+        background: var(--accent);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .post-username {
+        font-weight: 600;
+        font-size: 18px;
+        color: var(--text);
+        text-decoration: none;
+    }
+
+    .post-image {
+        width: 100%;
+        max-width: 100%;
+        transform: scale(1.05);
+        margin: 25px 0;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
+    .post-actions {
+        margin-bottom: 12px;
+    }
+
+    .action-btn {
+        font-size: 20px;
+        padding: 5px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text);
+    }
+
+    .like-count {
+        font-size: 16px;
+        margin-left: 8px;
+        color: var(--text);
+    }
+
+    .post-caption {
+        font-size: 16px;
+        line-height: 1.6;
+        margin: 0;
+        color: var(--text);
+    }
+
+    .post-right {
+        width: 50%;
+        display: flex;
+        flex-direction: column;
+    }
+    .comments-list {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 30px;
+    }
+    .comment-item {
+        margin-bottom: 25px;
+    }
+
+    .comment-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+
+    .comment-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .comment-username {
+        font-weight: 600;
+        color: var(--text);
+        text-decoration: none;
+        font-size: 15px;
+    }
+
+    .comment-text {
+        color: var(--text);
+        line-height: 1.5;
+        margin-left: 46px;
+        font-size: 15px;
+        margin-bottom: 5px;
+    }
+
+    .comment-meta {
+        margin-left: 46px;
+        margin-top: 12px;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .comment-time {
+        font-size: 12px;
+        color: var(--text-muted);
+    }
+
+    .reply-btn {
+        font-size: 12px;
+        color: var(--text-muted);
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .reply-btn:hover {
+        color: var(--text);
+    }
+
+    .child-comments {
+        margin-top: 15px;
+        margin-left: 40px;
+    }
+
+    .reply-form {
+        margin: 10px 0 10px 46px;
+        gap: 8px;
+        display: flex;
+    }
+    .cancel-reply-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .comment-form-container {
+        padding: 20px 30px;
+        border-top: 1px solid var(--border);
+    }
+    .comment-form {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    .comment-input {
+        flex-grow: 1;
+        padding: 12px 16px;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--bg);
+        color: var(--text);
+        outline: none;
+        font-size: 14px;
+    }
+    .comment-input:focus {
+        border-color: var(--accent);
+    }
+    .comment-submit {
+        background: none;
+        border: none;
+        color: var(--accent);
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 14px;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Reply Button Logic
+    const commentsList = document.getElementById('commentsListContainer');
+    commentsList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('reply-btn')) {
+            document.querySelectorAll('.reply-form').forEach(form => form.style.display = 'none');
+            const commentItem = e.target.closest('.comment-item');
+            const replyForm = commentItem.querySelector('.reply-form');
+            replyForm.style.display = 'flex';
+            replyForm.querySelector('.reply-input').focus();
+        }
+
+        if (e.target.classList.contains('cancel-reply-btn')) {
+            e.target.closest('.reply-form').style.display = 'none';
+        }
+    });
+
+    // 🔥 Dynamic Like Button Logic
+    const likeBtn = document.querySelector('.like-btn');
+    likeBtn.addEventListener('click', async () => {
+        const postId = likeBtn.dataset.postId;
+        const isLiked = likeBtn.dataset.liked === 'True' || likeBtn.dataset.liked === '1';
+        const likeCountEl = document.getElementById(`post-like-count-${postId}`);
+
+        try {
+            // Send like request to backend
+            const response = await fetch(`/post/${postId}/like`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+
+            // Update heart icon
+            if (data.liked) {
+                likeBtn.innerHTML = '❤️';
+                likeBtn.dataset.liked = 'True';
+            } else {
+                likeBtn.innerHTML = '♡';
+                likeBtn.dataset.liked = 'False';
+            }
+
+            // Update like count
+            likeCountEl.innerText = `${data.count} Likes`;
+
+        } catch (error) {
+            console.error('Like request failed:', error);
+        }
+    });
+});
+</script>
+{% endblock %}

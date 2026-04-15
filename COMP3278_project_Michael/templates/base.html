@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HKUgram{% endblock %}</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --card-bg: #121212;
+            --text: #ffffff;
+            --text-muted: #a0a0a0;
+            --border: #262626;
+            --accent: #0095f6;
+        }
+        [data-theme="light"] {
+            --bg: #ffffff;
+            --card-bg: #fafafa;
+            --text: #000000;
+            --text-muted: #8e8e8e;
+            --border: #dbdbdb;
+            --accent: #0095f6;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            transition: all 0.3s ease;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        /* NEW: Search Bar Styles */
+        .search-container {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 20px;
+        }
+        .search-form {
+            display: flex;
+            align-items: center;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 5px 10px;
+            width: 100%;
+        }
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text);
+            padding: 8px 10px;
+            font-size: 14px;
+        }
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+        .search-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 5px;
+        }
+        /* End Search Bar Styles */
+        .header-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background 0.2s;
+            text-decoration: none;
+        }
+        .icon-btn:hover {
+            background: var(--border);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <!-- Left: Logo -->
+        <a href="{{ url_for('feed') }}" style="text-decoration: none;">
+            <div class="logo">HKUgram</div>
+        </a>
+
+        <!-- Middle: Persistent Search Bar (NEW) -->
+        <div class="search-container">
+            <form method="get" action="{{ url_for('search') }}" class="search-form">
+                <input
+                    type="text"
+                    name="q"
+                    placeholder="Search by username"
+                    class="search-input"
+                    value="{{ request.args.get('q', '') }}"
+                />
+                <button type="submit" class="search-btn">🔍</button>
+            </form>
+        </div>
+
+        <!-- Right: Buttons (Unchanged) -->
+        <div class="header-right">
+            {% if request.endpoint not in ['login', 'register'] %}
+            <a href="{{ url_for('new_post') }}" class="icon-btn">+</a>
+            <a href="{{ url_for('new_story') }}" class="icon-btn">📷</a>
+            <a href="{{ url_for('edit_profile') }}" class="icon-btn">✏️</a>
+            {% endif %}
+            <button class="icon-btn" onclick="toggleTheme()">☀️</button>
+        </div>
+    </div>
+
+    {% block content %}{% endblock %}
+
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            if (body.getAttribute('data-theme') === 'light') {
+                body.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        window.addEventListener('DOMContentLoaded', () => {
+            if(localStorage.getItem('theme') === 'light'){
+                document.body.setAttribute('data-theme','light');
+            }
+        });
+    </script>
+</body>
+</html>
