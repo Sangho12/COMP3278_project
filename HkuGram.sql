@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS comments (
   userId INTEGER NOT NULL,
   parent_comment_id INTEGER DEFAULT NULL,
   content TEXT NOT NULL,
-  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP NULL DEFAULT (datetime('now', '+8 hours')),
   FOREIGN KEY (postId) REFERENCES posts (postId) ON DELETE CASCADE,
   FOREIGN KEY (userId) REFERENCES users (userId) ON DELETE CASCADE,
   FOREIGN KEY (parent_comment_id) REFERENCES comments (commentId) ON DELETE CASCADE
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   content TEXT NOT NULL,
   is_read INTEGER DEFAULT 0,
   postId INTEGER NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT (datetime('now', '+8 hours')),
   FOREIGN KEY (userId) REFERENCES users (userId),
   FOREIGN KEY (postId) REFERENCES posts (postId)
 );
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS posts (
   content TEXT DEFAULT NULL,
   feeling_emoji TEXT DEFAULT NULL,
   image_url TEXT DEFAULT NULL,
-  created_at timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at timestamp NULL DEFAULT (datetime('now', '+8 hours')),
   FOREIGN KEY (userId) REFERENCES users (userId)
 );
 
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS stories (
   storyId INTEGER PRIMARY KEY AUTOINCREMENT,
   userId INTEGER NOT NULL,
   image_video_url TEXT DEFAULT NULL,
-  created_at timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at timestamp NULL DEFAULT (datetime('now', '+8 hours')),
   FOREIGN KEY (userId) REFERENCES users (userId)
 );
 
