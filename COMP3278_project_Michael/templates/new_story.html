@@ -1,0 +1,139 @@
+{% extends 'base.html' %} 
+{% block title %}New Story - HkuGram{% endblock %} 
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8 new-post-wrapper">
+    <!-- 5% 更宽容器 (和new_post.html完全一致) -->
+    <div class="new-post-container">
+      <!-- 标题样式 完全匹配new_post -->
+      <div class="text-center mb-0">
+        <h1 class="new-post-main-title">HkuGram</h1>
+        <h2 class="new-post-subtitle">Create a New Story</h2>
+      </div>
+
+      <!-- 表单样式 完全匹配 -->
+      <form method="post" action="{{ url_for('new_story') }}">
+        <!-- 仅保留故事所需的 URL 输入框 -->
+        <div class="mb-4 form-group">
+          <label for="image_url" class="form-label">Image / Video URL</label>
+          <input 
+            class="form-control form-input-lg" 
+            name="image_url" 
+            id="image_url"
+            type="url"
+            placeholder="https://example.com/photo.jpg"
+            required
+          />
+        </div>
+
+        <!-- 按钮组 完全匹配new_post样式 -->
+        <div class="button-group">
+          <button class="btn btn-primary btn-lg-custom" type="submit">Post Story</button>
+          <a class="btn btn-link btn-link-lg" href="{{ url_for('feed') }}">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- CSS 完全和 new_post.html 一致 (5%更宽+同款设计) -->
+<style>
+    .new-post-wrapper {
+        margin-top: 64px !important;
+        display: flex;
+        justify-content: center;
+    }
+
+    .new-post-container {
+        max-width: 378px !important; /* 5% larger than login page */
+        padding: 48px 40px !important;
+        background: var(--card-bg);
+        border-radius: 16px;
+        border: 1px solid var(--border);
+    }
+
+    .new-post-main-title {
+        font-size: 29px !important;
+        font-weight: 700 !important;
+        text-align: center;
+        margin-bottom: 8px !important;
+        color: var(--text);
+    }
+
+    .new-post-subtitle {
+        font-size: 16px !important;
+        font-weight: 500 !important;
+        text-align: center;
+        margin-bottom: 40px !important;
+        color: var(--text-muted);
+    }
+
+    .form-group {
+        margin-bottom: 32px !important;
+    }
+
+    .form-label {
+        font-size: 16px !important;
+        font-weight: 500 !important;
+        margin-bottom: 12px !important;
+        color: var(--text);
+        display: block;
+        text-align: center;
+    }
+
+    .form-input-lg {
+        padding: 18px 19px !important;
+        font-size: 15px !important;
+        border-radius: 13px !important;
+        border: 1px solid var(--border) !important;
+        background: var(--bg) !important;
+        color: var(--text) !important;
+        outline: none !important;
+        text-align: center;
+        width: 100%;
+    }
+
+    .form-input-lg:focus {
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 2px rgba(0, 149, 246, 0.15) !important;
+    }
+
+    .button-group {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-top: 8px;
+    }
+
+    .btn-lg-custom {
+        padding: 18px !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        border-radius: 13px !important;
+        background: var(--accent) !important;
+        border: none !important;
+        color: white !important;
+        cursor: pointer !important;
+        transition: opacity 0.2s !important;
+        width: 100%;
+    }
+
+    .btn-lg-custom:hover {
+        opacity: 0.9 !important;
+    }
+
+    .btn-link-lg {
+        font-size: 15px !important;
+        font-weight: 600 !important;
+        color: var(--accent) !important;
+        text-decoration: none !important;
+        padding: 8px !important;
+        text-align: center;
+        display: block;
+    }
+
+    .btn-link-lg:hover {
+        text-decoration: underline !important;
+    }
+</style>
+{% endblock %}
