@@ -1,0 +1,50 @@
+{% extends 'base.html' %} 
+{% block title %}Stories - {{ prof.username }}{% endblock %} 
+{% block content %}
+<div style="max-width: 500px; margin: 30px auto; padding: 0 15px;">
+    <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 20px;">
+        <img id="storyImg" src="" style="width: 100%; height: 70vh; object-fit: cover; border-radius: 8px 8px 0 0;">
+        <div style="padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="margin:0; font-size:16px; color: var(--text);">{{ prof.username }}</h4>
+            <span id="expiryText" style="color: var(--text-muted); font-size:14px;"></span>
+        </div>
+    </div>
+
+    <div style="display: flex; justify-content: center; align-items: center;">
+        <a href="{{ url_for('feed') }}" style="padding: 12px 24px; border-radius:8px; border:none; background:#ef4444; color:white; text-decoration:none; font-weight:500;">Back to Feed</a>
+    </div>
+</div>
+
+<script>
+    const stories = {{ stories|tojson }};
+    const feedUrl = "{{ url_for('feed') }}";
+
+    function loadStory() {
+        if (!stories || stories.length === 0) {
+            window.location.href = feedUrl;
+            return;
+        }
+        const story = stories[0];
+        document.getElementById("storyImg").src = story.image_video_url;
+        checkExpiry(story.created_at);
+    }
+
+    function checkExpiry(createdAtStr) {
+        const created = new Date(createdAtStr + 'Z');
+        const expiry = new Date(created.getTime() + 24 * 60 * 60 * 1000);
+        const now = new Date();
+
+        if (now > expiry) {
+            document.getElementById("expiryText").innerText = "Expired";
+            setTimeout(() => window.location.href = feedUrl, 2000);
+        } else {
+            const timeLeftMs = expiry - now;
+            const hours = Math.floor(timeLeftMs / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeftMs % (1000 * 60 * 60)) / (1000 * 60));
+            document.getElementById("expiryText").innerText = `${hours}h ${minutes}m left`;
+        }
+    }
+
+    loadStory();
+</script>
+{% endblock %}
