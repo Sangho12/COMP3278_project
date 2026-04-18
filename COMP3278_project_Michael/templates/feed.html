@@ -216,7 +216,7 @@
         {{ post.like_count|default(0) }} Likes
       </div>
 
-      <p style="margin:0; font-size:15px; line-height:1.5; color: var(--text);"><strong>{{ post.username }}</strong> {{ post.content }}</p>
+      <p style="margin:0; font-size:15px; line-height:1.5; color: var(--text);"><strong>{{ post.username }}</strong> {% if post.content %}{{ post.content }}{% endif %}</p>
 
       <p style="margin: 8px 0 0 0; font-size: 12px; color: var(--text-muted);">
         {% if post.created_at %}
