@@ -31,7 +31,7 @@
                 <span class="like-count" id="post-like-count-{{ post.postId }}">{{ post.like_count|default(0) }} Likes</span>
             </div>
 
-            <p class="post-caption"><strong>{{ post.username }}</strong> {{ post.content }}</p>
+            <p class="post-caption"><strong>{{ post.username }}</strong> {% if post.content %}{{ post.content }}{% endif %}</p>
         </div>
     </div>
 
