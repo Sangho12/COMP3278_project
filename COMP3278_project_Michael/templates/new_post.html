@@ -1,0 +1,191 @@
+{% extends 'base.html' %} 
+{% block title %}Create a New Post - HkuGram{% endblock %} 
+{% block content %}
+<style>
+  .new-post-wrapper {
+    max-width: 500px;
+    margin: 30px auto;
+    padding: 0 16px;
+  }
+  .new-post-container {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 24px;
+  }
+  .new-post-title {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .new-post-subtitle {
+    text-align: center;
+    font-size: 16px;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+  }
+  .form-group {
+    margin-bottom: 24px;
+  }
+  .form-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text);
+    text-align: center;
+  }
+  .form-input, .form-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--card-bg-dark);
+    color: var(--text);
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+  .form-textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+  /* 3 ROWS × 7 COLUMNS EMOJI GRID */
+  .emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .emoji-item {
+    font-size: 24px;
+    text-align: center;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .emoji-item:hover {
+    background: var(--border);
+  }
+  .emoji-item.selected {
+    background: var(--accent);
+  }
+  .emoji-preview {
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: 8px;
+  }
+  .post-btn {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 16px;
+  }
+  .cancel-link {
+    display: block;
+    text-align: center;
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+  }
+</style>
+
+<div class="new-post-wrapper">
+  <div class="new-post-container">
+    <h1 class="new-post-title">HkuGram</h1>
+    <p class="new-post-subtitle">Create a New Post</p>
+
+    <form method="post" action="{{ url_for('new_post') }}">
+      <!-- Content -->
+      <div class="form-group">
+        <label class="form-label">Content</label>
+        <textarea 
+          class="form-textarea" 
+          name="content" 
+          placeholder="Share your thoughts..."
+        ></textarea>
+      </div>
+
+      <!-- Image URL -->
+      <div class="form-group">
+        <label class="form-label">Image URL</label>
+        <input 
+          class="form-input" 
+          name="image_url" 
+          type="text"
+          placeholder="https://example.com/photo.jpg"
+        />
+      </div>
+
+      <!-- Feeling Emoji (3×7 Grid) -->
+      <div class="form-group">
+        <label class="form-label">Feeling (emoji)</label>
+        <!-- 👇 CRITICAL: NAME MUST BE EXACTLY "feeling_emoji" -->
+        <input type="hidden" name="feeling_emoji" id="selected_emoji" value="">
+        
+        <div class="emoji-grid">
+          <!-- ROW 1 -->
+          <span class="emoji-item">😊</span>
+          <span class="emoji-item">😂</span>
+          <span class="emoji-item">❤️</span>
+          <span class="emoji-item">😎</span>
+          <span class="emoji-item">🥳</span>
+          <span class="emoji-item">🔥</span>
+          <span class="emoji-item">✨</span>
+
+          <!-- ROW 2 -->
+          <span class="emoji-item">🥰</span>
+          <span class="emoji-item">😢</span>
+          <span class="emoji-item">😡</span>
+          <span class="emoji-item">🤔</span>
+          <span class="emoji-item">😴</span>
+          <span class="emoji-item">😜</span>
+          <span class="emoji-item">🤩</span>
+
+          <!-- ROW 3 -->
+          <span class="emoji-item">🍕</span>
+          <span class="emoji-item">☕</span>
+          <span class="emoji-item">🎵</span>
+          <span class="emoji-item">🏀</span>
+          <span class="emoji-item">🎮</span>
+          <span class="emoji-item">✈️</span>
+          <span class="emoji-item">📚</span>
+        </div>
+
+        <div class="emoji-preview" id="emoji_preview">No emoji selected</div>
+      </div>
+
+      <!-- Buttons -->
+      <button class="post-btn" type="submit">Post</button>
+      <a class="cancel-link" href="{{ url_for('feed') }}">Cancel</a>
+    </form>
+  </div>
+</div>
+
+<script>
+  const emojiItems = document.querySelectorAll('.emoji-item');
+  const selectedEmojiInput = document.getElementById('selected_emoji');
+  const emojiPreview = document.getElementById('emoji_preview');
+
+  emojiItems.forEach(item => {
+    item.addEventListener('click', () => {
+      // Clear selection
+      emojiItems.forEach(i => i.classList.remove('selected'));
+      // Mark selected
+      item.classList.add('selected');
+      // Save value
+      const emoji = item.textContent;
+      selectedEmojiInput.value = emoji;
+      emojiPreview.textContent = `Selected: ${emoji}`;
+    });
+  });
+</script>
+{% endblock %}
