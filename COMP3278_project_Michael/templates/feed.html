@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+{% block title %}Feed | HKUgram{% endblock %}
+
+{% block content %}
+<style>
+    /* --- YOUR EXISTING STYLES (UNCHANGED) --- */
+    .notification-wrapper {
+        position: fixed;
+        top: 50%;
+        left: 20px;
+        transform: translateY(-50%);
+        z-index: 1000;
+    }
+    .bell-button {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #6366f1;
+        color: white;
+        border: none;
+        font-size: 17px;
+        cursor: pointer;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .bell-badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: #ef4444;
+        color: white;
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 50%;
+        min-width: 18px;
+        text-align: center;
+    }
+    .notification-popup {
+        position: absolute;
+        top: 0;
+        left: 55px;
+        width: 260px;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        padding: 12px;
+        display: none;
+    }
+    .notification-item {
+        padding: 8px 0;
+        border-bottom: 1px solid #f1f1f1;
+    }
+    .notification-item a {
+        text-decoration: none;
+        color: #1f2937;
+        font-size: 14px;
+        display: block;
+    }
+    .notification-item a:hover {
+        color: #6366f1;
+    }
+    .notification-empty {
+        text-align: center;
+        color: #999;
+        padding: 10px 0;
+        font-size: 14px;
+    }
+
+    /* --- NEW/UPDATED STYLE: LOCK EMOJI TO TOP RIGHT --- */
+    .post-header {
+        position: relative; /* CRITICAL: Makes emoji position relative to the header */
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+    }
+    .post-feeling-emoji {
+        position: absolute; /* LOCK TO TOP RIGHT */
+        top: 12px;
+        right: 16px;
+        font-size: 24px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text);
+    }
+</style>
+
+<!-- --- YOUR EXISTING NOTIFICATION CODE (UNCHANGED) --- -->
+<div class="notification-wrapper">
+    <button class="bell-button" onclick="toggleNotifications()">🔔</button>
+    <span class="bell-badge" id="notificationBadge" style="display: none;">0</span>
+    <div class="notification-popup" id="notificationPopup">
+    </div>
+</div>
+
+<script>
+    function toggleNotifications() {
+        const popup = document.getElementById('notificationPopup');
+        popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+    }
+    window.addEventListener('click', function(e) {
+        const wrapper = document.querySelector('.notification-wrapper');
+        const popup = document.getElementById('notificationPopup');
+        if (!wrapper.contains(e.target)) {
+            popup.style.display = 'none';
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const badge = document.getElementById('notificationBadge');
+        const popup = document.getElementById('notificationPopup');
+        
+        const rawNotifications = [
+            {% for notif in new_post_notifications %}
+                { postId: {{ notif.postId }}, username: "{{ notif.username }}", url: "{{ url_for('view_post', postId=notif.postId) }}" },
+            {% endfor %}
+        ];
+
+        let readPostIds = JSON.parse(sessionStorage.getItem('readPostIds') || '[]');
+        const unreadNotifications = rawNotifications.filter(n => !readPostIds.includes(n.postId));
+        const count = unreadNotifications.length;
+
+        badge.innerText = count;
+        if (count > 0) badge.style.display = 'block';
+        else badge.style.display = 'none';
+
+        if (unreadNotifications.length > 0) {
+            popup.innerHTML = unreadNotifications.map(n => `
+                <div class="notification-item" data-post-id="${n.postId}">
+                    <a href="${n.url}" class="notification-link">
+                        ✅ ${n.username} has a new post!
+                    </a>
+                </div>
+            `).join('');
+        } else {
+            popup.innerHTML = '<div class="notification-empty">No new posts from followed users</div>';
+        }
+
+        document.querySelectorAll('.notification-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const postUrl = link.getAttribute('href');
+                const notificationItem = e.target.closest('.notification-item');
+                const postId = parseInt(notificationItem.dataset.postId);
+
+                if (!readPostIds.includes(postId)) {
+                    readPostIds.push(postId);
+                    sessionStorage.setItem('readPostIds', JSON.stringify(readPostIds));
+                }
+                notificationItem.remove();
+
+                const remainingItems = popup.querySelectorAll('.notification-item');
+                const newCount = remainingItems.length;
+                badge.innerText = newCount;
+                if (newCount <= 0) {
+                    badge.style.display = 'none';
+                    popup.innerHTML = '<div class="notification-empty">No new posts from followed users</div>';
+                }
+                setTimeout(() => window.location.href = postUrl, 150);
+            });
+        });
+    });
+</script>
+
+<!-- --- YOUR EXISTING STORIES CODE (UNCHANGED) --- -->
+<div class="stories-container" style="max-width: 600px; margin: 0 auto; padding: 0 0 20px; overflow-x: auto; white-space: nowrap;">
+  {% if story_users and story_users|length > 0 %}
+    {% for story_user in story_users %}
+      <div class="story-item" style="display: inline-block; text-align: center; margin: 0 8px;">
+        <a href="{{ url_for('stories', username=story_user.username) }}" style="text-decoration: none;">
+          <div style="width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--accent); padding: 2px; margin: 0 auto;">
+            {% if story_user.profilePicture %}
+              <img src="{{ story_user.profilePicture }}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+            {% else %}
+              <div style="width: 100%; height: 100%; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                {{ story_user.username[0]|upper }}
+              </div>
+            {% endif %}
+          </div>
+          <p style="margin: 4px 0 0; font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 60px;">
+            {{ story_user.username }}
+          </p>
+        </a>
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
+
+<!-- --- FEED CONTAINER (ONLY POST HEADER IS MODIFIED) --- -->
+<div class="feed-container" style="max-width: 600px; margin: 0 auto; padding: 20px 0;">
+  {% for post in posts %}
+  <div class="post" style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 20px; overflow: hidden;">
+    
+    <!-- 👇 ONLY THIS PART IS MODIFIED: POST HEADER WITH LOCKED EMOJI 👇 -->
+    <!-- 👇 ONLY THIS PART IS MODIFIED: POST HEADER WITH LOCKED EMOJI (NO PLACEHOLDER) 👇 -->
+    <div class="post-header">
+  
+      <!-- LEFT: Avatar + Username (100% ORIGINAL) -->
+      <div style="display: flex; align-items: center; gap: 10px;">
+        {% if post.profilePicture %}
+          <img src="{{ post.profilePicture }}" class="avatar" alt="avatar" style="width: 40px; height: 40px; border-radius: 50%;">
+        {% else %}
+          <div class="avatar" style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">{{ post.username[0]|upper }}</div>
+        {% endif %}
+        <a href="{{ url_for('profile', username=post.username) }}" style="font-weight: 600; color: var(--text); text-decoration: none; font-size: 16px;">{{ post.username }}</a>
+      </div>
+
+      <!-- RIGHT: EMOJI (LOCKED TO TOP RIGHT CORNER - NO PLACEHOLDER) -->
+      <div class="post-feeling-emoji">
+        {% if post.feeling_emoji %}
+          {{ post.feeling_emoji }}
+        {% endif %}
+      </div>
+  
+</div>
+
+    <!-- --- YOUR EXISTING POST CONTENT (UNCHANGED) --- -->
+    <a href="{{ url_for('view_post', postId=post.postId) }}">
+      {% if post.image_url %}
+      <img src="{{ post.image_url }}" style="width: 100%; object-fit: cover;">
+      {% endif %}
+    </a>
+
+    <div style="padding: 12px 16px;">
+      <div class="post-actions" style="display: flex; gap: 15px; margin-bottom: 8px;">
+        <button 
+          class="like-btn" 
+          data-post-id="{{ post.postId }}"
+          data-liked="{{ post.user_liked }}"
+          style="background: none; border: none; font-size: 22px; cursor: pointer; padding: 0; color: var(--text);"
+        >
+          {% if post.user_liked %}❤️{% else %}♡{% endif %}
+        </button>
+        <a href="{{ url_for('view_post', postId=post.postId) }}" style="font-size: 22px; color: var(--text); text-decoration: none;">💬</a>
+      </div>
+
+      <div style="font-weight: 600; margin-bottom: 8px; font-size: 15px;" id="like-count-{{ post.postId }}">
+        {{ post.like_count|default(0) }} Likes
+      </div>
+
+      <p style="margin:0; font-size:15px; line-height:1.5; color: var(--text);"><strong>{{ post.username }}</strong> {% if post.content %}{{ post.content }}{% endif %}</p>
+
+      <p style="margin: 8px 0 0 0; font-size: 12px; color: var(--text-muted);">
+        {% if post.created_at %}
+          {{ post.created_at }}
+        {% elif post.timestamp %}
+          {{ post.timestamp }}
+        {% elif post.date %}
+          {{ post.date }}
+        {% endif %}
+      </p>
+    </div>
+  </div>
+  {% else %}
+  <p style="text-align: center; color: var(--text-muted);">No posts yet!</p>
+  {% endfor %}
+</div>
+
+<!-- --- YOUR EXISTING LIKE SCRIPT (UNCHANGED) --- -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.like-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const postId = btn.dataset.postId;
+      const likeCountEl = document.getElementById(`like-count-${postId}`);
+
+      try {
+        const response = await fetch(`/post/${postId}/like`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+
+        if (data.liked) {
+          btn.innerHTML = '❤️';
+          btn.dataset.liked = 'True';
+        } else {
+          btn.innerHTML = '♡';
+          btn.dataset.liked = 'False';
+        }
+        likeCountEl.innerText = `${data.count} Likes`;
+      } catch (err) {
+        console.error('Like error:', err);
+      }
+    });
+  });
+});
+</script>
+{% endblock %}
