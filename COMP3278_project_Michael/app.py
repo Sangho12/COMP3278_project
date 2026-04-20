@@ -91,17 +91,20 @@ def register():
   if request.method == 'POST':
     username = request.form.get('username')
     password = request.form.get('password')
-    
+    profile=request.form.get('profile_picture')
+    print(profile)
     if not username or not password:
       flash("Incorrect username or password.")
       return redirect(url_for('register'))
       
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
     db = get_db()
-    
+    if(profile==''):
+      print('here')
+      profile='https://img.icons8.com/?size=100&id=kDoeg22e5jUY&format=png&color=000000'
     try:
-      db.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_password))
-      db.commit()
+      db.execute("INSERT INTO users (username, password, profilePicture) VALUES (?, ?, ?)", (username, hashed_password,profile))
+      db.commit() 
       flash("Registration successful! Please go to log in.")
       return redirect(url_for('login'))
       
@@ -496,6 +499,30 @@ def search():
     results = db.execute("SELECT userId, username, profilePicture FROM users WHERE username LIKE ? LIMIT 50", (like,)).fetchall()
   return render_template('search.html', q=q, results=results, user=current_user())
 
+@app.route('/search/api')
+@login_required
+def search_api():
+    q = request.args.get('q', '').strip()
+    if not q or len(q) < 1:   # you can change to < 2 if you want
+        return jsonify([])
+
+    db = get_db()
+    like = f"%{q}%"
+    
+    results = db.execute("""
+        SELECT userId, username, profilePicture 
+        FROM users 
+        WHERE username LIKE ? 
+        LIMIT 15
+    """, (like,)).fetchall()
+
+    # Convert to list of dicts for JSON
+    users = [{
+        'username': row['username'],
+        'profilePicture': row['profilePicture'] or None
+    } for row in results]
+
+    return jsonify(users)
 # Followers List Route
 @app.route('/followers/<username>')
 @login_required
