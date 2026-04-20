@@ -4,8 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}HKUgram{% endblock %}
-    </title>
+    <title>{% block title %}HKUgram{% endblock %}</title>
     <style>
         :root {
             --bg: #000000;
@@ -14,6 +13,8 @@
             --text-muted: #a0a0a0;
             --border: #262626;
             --accent: #0095f6;
+            --logout-red: #ef4444; /* Red for logout button */
+            --logout-red-hover: #dc2626; /* Darker red on hover */
         }
 
         [data-theme="light"] {
@@ -118,12 +119,27 @@
         .icon-btn:hover {
             background: var(--border);
         }
-
+        /* ✨ UPDATED: Log Out Text Button Style */
+        .logout-btn {
+            background: var(--logout-red);
+            border: none;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: background 0.2s;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .logout-btn:hover {
+            background: var(--logout-red-hover); /* Darker red on hover */
+        }
         /* 🔥 FIXED: Right Most Button CSS (only change here) */
         .analytics-btn {
             display: block;
             width: fit-content;
-            /* Margin: top | right | bottom | left → auto left pushes to RIGHT MOST */
             margin: 0 0 25px auto;
             padding: 10px 20px;
             background-color: var(--accent);
@@ -222,14 +238,14 @@
                     align-items: center; 
                     justify-content: center;">
                 {% if user.profilePicture %}
-                <!-- Perfectly round profile picture -->
-                <img src="{{ user.profilePicture }}" alt="Edit Profile" style="width: 100%; 
+                    <img src="{{ user.profilePicture }}" 
+                        alt="Edit Profile" 
+                        style="width: 100%; 
                                 height: 100%; 
                                 object-fit: cover; 
                                 border-radius: 50%;">
                 {% else %}
-                <!-- Fallback: First letter of username -->
-                <div style="width: 100%; 
+                    <div style="width: 100%; 
                                 height: 100%; 
                                 border-radius: 50%; 
                                 background: var(--accent); 
@@ -245,6 +261,7 @@
             </a>
             {% endif %}
             <button class="icon-btn" onclick="toggleTheme()">☀️</button>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Log Out</a>
         </div>
     </div>
 
