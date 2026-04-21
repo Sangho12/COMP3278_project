@@ -156,6 +156,30 @@
         .analytics-btn:hover {
             background-color: #0081d6;
         }
+        
+        .sort-bar{
+            display:flex;
+            align-items:center;
+            justify-content: center;
+            gap:8px;
+            margin-bottom:24px;
+        }
+        .sort-label{
+            font-size:0.8rem;
+            color:var(--text-muted);
+            margin-right:4px}
+        .sort-btn{
+            padding:6px 14px;border-radius:20px;
+            font-size:0.8rem;font-weight:500;
+            border:1px solid var(--border);
+            color:var(--text-muted);background:none;
+            cursor:pointer;transition:all .2s;text-decoration:none;
+        }
+        .sort-btn.active{
+            background:var(--accent);
+            color:#ebe6e0ca;border-color:var(--accent);
+        }
+        .sort-btn:hover:not(.active){border-color:var(--text-muted);color:var(--text)}
 
         .search-dropdown {
             position: absolute;
@@ -212,6 +236,7 @@
             <div class="logo">HKUgram</div>
         </a>
 
+        {% if request.endpoint not in ['login', 'register'] %}
         <div class="search-container">
             <div class="search-form" style="position: relative;">
                 <input type="text" id="search-input" placeholder="Search users..." class="search-input"
@@ -224,6 +249,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <div class="header-right">
             {% if request.endpoint not in ['login', 'register'] %}
@@ -261,7 +287,9 @@
             </a>
             {% endif %}
             <button class="icon-btn" onclick="toggleTheme()">☀️</button>
+            {% if request.endpoint not in ['login', 'register'] %}
             <a href="{{ url_for('logout') }}" class="logout-btn">Log Out</a>
+            {% endif %}
         </div>
     </div>
 
