@@ -190,6 +190,14 @@
   {% endif %}
 </div>
 
+<div class="sort-bar">
+    <span class="sort-label">Sort by</span>
+    <a href="{{ url_for('feed', sort='new') }}"
+        class="sort-btn {% if sort=='new' %}active{% endif %}">⏱ Newest</a>
+    <a href="{{ url_for('feed', sort='popular') }}"
+        class="sort-btn {% if sort=='popular' %}active{% endif %}">🔥 Popular</a>
+</div>
+
 <!-- --- FEED CONTAINER (ONLY POST HEADER IS MODIFIED) --- -->
 <div class="feed-container" style="max-width: 600px; margin: 0 auto; padding: 20px 0;">
   {% for post in posts %}
