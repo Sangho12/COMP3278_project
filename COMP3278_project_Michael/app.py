@@ -105,7 +105,7 @@ def register():
     try:
       db.execute("INSERT INTO users (username, password, profilePicture) VALUES (?, ?, ?)", (username, hashed_password,profile))
       db.commit() 
-      flash("Registration successful! Please go to log in.")
+      flash("Registration successful!")
       return redirect(url_for('login'))
       
     except sqlite3.IntegrityError:
