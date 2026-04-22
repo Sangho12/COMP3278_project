@@ -1,6 +1,7 @@
 import hashlib
 import sqlite3
 import os
+import hmac
 from datetime import datetime
 from functools import wraps
 from flask import (Flask, g, render_template, request, redirect, url_for, session, jsonify, flash)
@@ -65,53 +66,84 @@ def index():
     return redirect(url_for('feed'))
   return redirect(url_for('login'))
 
-# User Authentication - Login
+def hash_password(password):
+    """Creates a secure salt + scrypt hash blob."""
+    salt = os.urandom(16)
+    pw_hash = hashlib.scrypt(
+        password.encode(), 
+        salt=salt, 
+        n=16384, 
+        r=8, 
+        p=1
+    )
+    return salt + pw_hash
+
+def verify_password(stored_password_blob, provided_password):
+    """Extracts salt and verifies the hash."""
+    salt = stored_password_blob[:16]
+    stored_hash = stored_password_blob[16:]
+    
+    new_hash = hashlib.scrypt(
+        provided_password.encode(), 
+        salt=salt, 
+        n=16384, 
+        r=8, 
+        p=1
+    )
+    return hmac.compare_digest(new_hash, stored_hash)
+
+
+# --- Updated Routes ---
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-  if request.method == 'POST':
-    username = request.form.get('username')
-    password = request.form.get('password')
-    
-    hashed_password = hashlib.sha256(password.encode()).hexdigest()
-    
-    db = get_db()
-    user = db.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, hashed_password)).fetchone()
-    if user:
-      session['userId'] = user['userId']
-      session['username'] = user['username']
-      return redirect(url_for('feed'))
-      
-    else:
-      flash("Invalid username or password.")
-  return render_template('login.html')
-      
-# User Authentication - Register
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        db = get_db()
+        # 1. Fetch user by username ONLY
+        user = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+        
+        # 2. Verify password using our helper function
+        if user and verify_password(user['password'], password):
+            session['userId'] = user['userId']
+            session['username'] = user['username']
+            return redirect(url_for('feed'))
+        else:
+            # Using a generic message is safer for security
+            flash("Invalid username or password.")
+            
+    return render_template('login.html')
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-  if request.method == 'POST':
-    username = request.form.get('username')
-    password = request.form.get('password')
-    profile=request.form.get('profile_picture')
-    print(profile)
-    if not username or not password:
-      flash("Incorrect username or password.")
-      return redirect(url_for('register'))
-      
-    hashed_password = hashlib.sha256(password.encode()).hexdigest()
-    db = get_db()
-    if(profile==''):
-      print('here')
-      profile='https://img.icons8.com/?size=100&id=kDoeg22e5jUY&format=png&color=000000'
-    try:
-      db.execute("INSERT INTO users (username, password, profilePicture) VALUES (?, ?, ?)", (username, hashed_password,profile))
-      db.commit() 
-      flash("Registration successful!")
-      return redirect(url_for('login'))
-      
-    except sqlite3.IntegrityError:
-      flash("Username already exists! Try another one.")
-  return render_template('register.html')
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        profile = request.form.get('profile_picture') or 'https://img.icons8.com/?size=100&id=kDoeg22e5jUY&format=png&color=000000'
 
+        if not username or not password:
+            flash("Username and password are required.")
+            return redirect(url_for('register'))
+        
+        # 3. Hash the password before storing
+        secure_blob = hash_password(password)
+        
+        db = get_db()
+        try:
+            # Store the binary blob in the password column
+            db.execute("INSERT INTO users (username, password, profilePicture) VALUES (?, ?, ?)", 
+                       (username, sqlite3.Binary(secure_blob), profile))
+            db.commit() 
+            flash("Registration successful!")
+            return redirect(url_for('login'))
+            
+        except sqlite3.IntegrityError:
+            flash("Username already exists!")
+            
+    return render_template('register.html')
 # User Authentication - Logout
 @app.route('/logout')
 def logout():
