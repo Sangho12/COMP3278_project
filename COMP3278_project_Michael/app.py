@@ -142,7 +142,7 @@ def feed():
       JOIN users u ON u.userId = p.userId
       LEFT JOIN notification_read nr ON nr.postId = p.postId AND nr.userId = ?
       WHERE p.userId IN ({placeholders})
-        AND datetime(p.created_at) >= datetime('now', '-1 day')
+        AND datetime(p.created_at) >= datetime('now', '-1 day', '+8 hours')
         AND nr.postId IS NULL
       ORDER BY p.created_at DESC
     """, [current_user_id] + following_ids).fetchall()
@@ -167,7 +167,7 @@ def feed():
     FROM (
       SELECT userId, MAX(created_at) AS latest_story
       FROM stories
-      WHERE datetime(created_at) >= datetime('now', '-1 day')
+      WHERE datetime(created_at) >= datetime('now', '-1 day', '+8 hours')
       GROUP BY userId
     ) AS latest
     JOIN users u ON u.userId = latest.userId
@@ -252,7 +252,7 @@ def stories(username):
     FROM stories s
     JOIN users u ON u.userId = s.userId
     WHERE s.userId = ?
-    AND datetime(s.created_at) >= datetime('now', '-1 day')
+    AND datetime(s.created_at) >= datetime('now', '-1 day', '+8 hours')
     ORDER BY s.created_at DESC
     LIMIT 1
   """, (prof['userId'],)).fetchall()
