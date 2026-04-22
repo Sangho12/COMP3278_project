@@ -200,6 +200,15 @@
 
 <!-- --- FEED CONTAINER (ONLY POST HEADER IS MODIFIED) --- -->
 <div class="feed-container" style="max-width: 600px; margin: 0 auto; padding: 20px 0;">
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <div class="alert alert-warning text-center mb-4">
+        {% for message in messages %}
+          <div class="flash">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
   {% for post in posts %}
   <div class="post" style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 20px; overflow: hidden;">
     
