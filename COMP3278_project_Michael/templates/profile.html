@@ -2,6 +2,15 @@
 {% block title %}{{ prof.username }} - Profile{% endblock %} 
 
 {% block content %}
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="alert alert-warning text-center mb-4">
+      {% for message in messages %}
+        <div class="flash">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 <div class="profile-container">
   <!-- Profile Header -->
   <div class="profile-header">
