@@ -33,7 +33,7 @@
         const created = new Date(createdAtStr + 'Z');
         const expiry = new Date(created.getTime() + 24 * 60 * 60 * 1000);
         const now = new Date();
-
+        now.setHours(now.getHours() + 8);
         if (now > expiry) {
             document.getElementById("expiryText").innerText = "Expired";
             setTimeout(() => window.location.href = feedUrl, 2000);
