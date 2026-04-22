@@ -7,6 +7,15 @@
     <div class="login-container">
       <h2 class="login-title">Log in</h2>
       <form method="post" action="{{ url_for('login') }}">
+      {% with messages = get_flashed_messages() %}
+          {% if messages %}
+          <div class="alert alert-warning text-center mb-4">
+              {% for message in messages %}
+                {{ message }}
+              {% endfor %}
+          </div>
+          {% endif %}
+        {% endwith %}
         <!-- Username Input -->
         <div class="mb-4 form-group">
           <label class="form-label">Username</label>
